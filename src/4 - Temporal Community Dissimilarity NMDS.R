@@ -13,14 +13,14 @@ library(ggrepel)
 library(beepr)
 library(easystats)
 
-source("../Structural_Stability_LMEs/src/Functions.R")
+source("../Scale_Dependence_Structural_Stability_LMEs/src/Functions.R")
 
 # load data
-df_nfls_nm <- read.csv("../Structural_Stability_LMEs/data/NFLS_NoPelagics_NW_Atlantic_trawlsurveydata.csv", header = T)
+df_nfls_nm <- read.csv("../Scale_Dependence_Structural_Stability_LMEs/Data/Trawl Data/NFLS_NoPelagics_NW_Atlantic_trawlsurveydata_NFLS.csv", header = T)
 
-df_ss_nm <- read.csv("../Structural_Stability_LMEs/data/SS_4VWXsurveydata_Fisher.csv", header = T)
+df_ss_nm <- read.csv("../Scale_Dependence_Structural_Stability_LMEs/Data/Trawl Data/SS_4VWXsurveydata_Fisher.csv", header = T)
 
-df_neus_nm <- read.csv("../Structural_Stability_LMEs/data/NEUS_NoPelagics_NW_Atlantic_trawlsurveydataNumONLY.csv")
+df_neus_nm <- read.csv("../Scale_Dependence_Structural_Stability_LMEs/Data/Trawl Data/NEUS_NoPelagics_NW_Atlantic_trawlsurveydataNumONLY.csv")
 
 ##### NFLS #####
 df_nfls_sub <-  df_nfls_nm %>%

@@ -17,17 +17,17 @@ library(forecast)
 library(caret)
 
 # load data
-df_sp_tips <- read.csv("../Structural_Stability_LMEs/data/richness_tips_split_chao.csv", header = T) %>%
+df_sp_tips <- read.csv("../Scale_Dependence_Structural_Stability_LMEs/Data/Output Data/richness_tips_split_chao.csv", header = T) %>%
   filter(year < 2004)
 
-df_gf_biomass <- read.csv("../Structural_Stability_LMEs/data/groundfish sum biomass.csv", header = T) %>%
+df_gf_biomass <- read.csv("../Scale_Dependence_Structural_Stability_LMEs/Data/Output Data/groundfish sum biomass.csv", header = T) %>%
   rename(year = Year)
 
-df_nao <- read.csv("../Structural_Stability_LMEs/data/Climate Data/NAO 1973-2004.csv", header = T) %>%
+df_nao <- read.csv("../Scale_Dependence_Structural_Stability_LMEs/Data/NAO Data/NAO 1973-2004.csv", header = T) %>%
   rename(year = Year) %>%
   filter(year >= 1973) 
 
-df_temp_harvest <- read.csv("../Structural_Stability_LMEs/data/Cumulative Harvest Pressure Data.csv", header = T) %>%
+df_temp_harvest <- read.csv("../Scale_Dependence_Structural_Stability_LMEs/Data/Cumulative Harvest Pressure Data.csv", header = T) %>%
   rename(year = Year) %>%
   dplyr::select(year, Region, total_landings_km2) %>%
   mutate(log_landings = log10(total_landings_km2)) %>%
@@ -186,16 +186,16 @@ gg_tips <- ggplot(df_sp_tips_sub, aes(x = year, y = tips, color = Trophic_Interv
 
 gg_tips
 
-# ggsave("../Structural_Stability_LMEs/figures/Figure 3 - Temporal TIPs.jpeg", plot = gg_tips, dpi = 300, width = 10, height = 4)
+# ggsave("../Scale_Dependence_Structural_Stability_LMEs/Figures/Figure 3 - Temporal TIPs.jpeg", plot = gg_tips, dpi = 300, width = 10, height = 4)
 
 #Community NMDS & Dissimilarity Plots
-source("../Structural_Stability_LMEs/src/Temporal Community Dissimilarity NMDS.R")
+source("../Scale_Dependence_Structural_Stability_LMEs/src/4 - Temporal Community Dissimilarity NMDS.R")
 
 gg_tips_bc <- plot_grid(gg_tips, gg_bc_all, nrow = 2, align = "hv")
 
 gg_tips_bc
 
-# ggsave("../Structural_Stability_LMEs/figures/Figure 3 - Temporal TIPs + BC.jpeg", plot = gg_tips_bc, dpi = 300, width = 10, height = 8)
+# ggsave("../Scale_Dependence_Structural_Stability_LMEs/Figures/Figure 3 - Temporal TIPs + BC.jpeg", plot = gg_tips_bc, dpi = 300, width = 10, height = 8)
 
 
 #Look for change over time for regions and trophic intervals
@@ -472,26 +472,30 @@ summary(mod4_all.7)
 anova.DirichletRegModel(mod4_all.2, mod4_all.7)
 
 #mod4_all.2 is the best fit model after model selection
-#mod4_all.4 is similar fit, but given anova suggests that removing scale_anom_landings significantly reduces fit, it is kept
+#mod4_all.4 is similar fit, but given anova suggests that removing scale_anom_landings significantly reduces fit
+#Results are similar between models
 ##### Plot Final Model #####
 mod_final <- mod4_all.2
 summary.DirichletRegModel(mod_final)
-confint.DirichletRegModel(mod_final, level = 0.89)
+confint.DirichletRegModel(mod_final, level = 0.90)
 
 summ_mod3_all <- summary.DirichletRegModel(mod_final)
 
-#Look at residuals
-df_summ_mod3_all_resid <- data.frame(summ_mod3_all$residuals)
-plot(df_summ_mod3_all_resid$summ_mod3_all.residuals[,1])
-plot(df_summ_mod3_all_resid$summ_mod3_all.residuals[,2])
-plot(df_summ_mod3_all_resid$summ_mod3_all.residuals[,3])
-plot(df_summ_mod3_all_resid$summ_mod3_all.residuals[,4])
+mod_final_resid <- residuals(mod_final, type = "standardized")
+df_mod_final_resid <- as.data.frame(mod_final_resid)
 
-#Look at residual acf
-acf(df_summ_mod3_all_resid$summ_mod3_all.residuals[,1])
-acf(df_summ_mod3_all_resid$summ_mod3_all.residuals[,2])
-acf(df_summ_mod3_all_resid$summ_mod3_all.residuals[,3])
-acf(df_summ_mod3_all_resid$summ_mod3_all.residuals[,4])
+#look at residuals
+plot(df_mod_final_resid$x[,"4.5-4.9"])
+plot(df_mod_final_resid$x[,"4.0-4.4"])
+plot(df_mod_final_resid$x[,"3.5-3.9"])
+plot(df_mod_final_resid$x[,"3.0-3.4"])
+
+#look at residual acfs
+acf(df_mod_final_resid$x[,"4.5-4.9"])
+acf(df_mod_final_resid$x[,"4.0-4.4"])
+acf(df_mod_final_resid$x[,"3.5-3.9"])
+acf(df_mod_final_resid$x[,"3.0-3.4"])
+
 
 ##### Plot Mean Effects #####
 # Predicted mean proportions
@@ -606,55 +610,6 @@ gg_mu_nao <- ggplot(pred_data_nao_mu %>% filter(Region == "NFLS"), aes(scale_nao
 
 gg_mu_nao
 
-#Landings Influence on Mean TIPs
-pred_data_yr<- expand.grid(
-  scale_year = seq(-2, 2, length.out = 100),
-  scale_anom_landings    = mean(df_sp_tis_covar$scale_anom_landings),
-  scale_nao = mean(df_sp_tis_covar$scale_nao),
-  scale_landings    = mean(df_sp_tis_covar$scale_landings),
-  Region         = levels(df_sp_tis_covar$Region)
-)
-
-# φ on natural scale
-mu_yr <- data.frame(predict(
-  mod_final,
-  newdata = pred_data_yr,
-  mu = TRUE, alpha = FALSE, phi = FALSE
-))
-
-pred_data_yr_mu <- pred_data_yr %>%
-  cbind(mu_yr) %>%
-  pivot_longer(
-    cols = starts_with("X"),
-    names_to  = "TIs",
-    values_to = "mean_prop"
-  ) %>%
-  mutate(
-    Trophic_Interval = case_when(
-      TIs == "X1" ~ "3.0–3.4",
-      TIs == "X2" ~ "3.5–3.9",
-      TIs == "X3" ~ "4.0–4.4",
-      TIs == "X4" ~ "4.5–4.9",
-      TRUE ~ NA_character_  # optional for unmatched values
-    ),
-    Trophic_Interval = factor(Trophic_Interval, levels = c("3.0–3.4","3.5–3.9","4.0–4.4","4.5–4.9"))) %>%
-  dplyr::select(scale_year, Region, Trophic_Interval, scale_year, scale_landings, scale_anom_landings, mean_prop)
-
-pred_data_yr_mu$Region <- factor(pred_data_yr_mu$Region, levels=c('NFLS', 'SS', 'NEUS'))
-
-gg_mu_yr <- ggplot(pred_data_yr_mu, aes(x = scale_year, y = mean_prop, color = Trophic_Interval)) +
-  geom_line(linewidth = 2, alpha = 0.8) +
-  facet_wrap(~ Region, nrow = 3) +
-  ylim(0, 0.5) +
-  labs(x = "Commercial Harvesting AnomaliesScaled)", y = "Mean Trophic Interval Proportion") +
-  scale_color_manual(values = rev(c("#4245c4", "#f78c2f",  "#649f4d", "#b61790"))) +
-  theme_bw(14) +
-  theme(legend.position = "none")
-
-gg_mu_yr
-
-cowplot::plot_grid(gg_mu_nao, gg_mu_yr, ncol = 2, align = "hv")
-
 ##### Look at Precision #####
 #Predicted means (fitted values)
 pred_df <- as.data.frame(predict(mod_final, se.fit = TRUE))
@@ -688,18 +643,18 @@ df_gfb_windows <- tribble(
 df_pred.phi$Region <- factor(df_pred.phi$Region, levels=c('NFLS', 'SS', 'NEUS'))
 df_gfb_windows$Region <- factor(df_gfb_windows$Region, levels=c('NFLS', 'SS', 'NEUS'))
 
-gg_pred_precis <- ggplot(df_pred.phi, aes(x = year, y = 1/phi, color = Region)) +
+gg_pred_precis <- ggplot(df_pred.phi, aes(x = year, y = phi, color = Region)) +
   geom_vline(data = df_gfb_windows, aes(xintercept = xintercept), linetype = "dashed", alpha = 0.8) +
   geom_line(linewidth = 2, alpha = 0.8) +
-  facet_wrap(~Region, nrow = 1) +
+  facet_wrap(~Region, nrow = 1, scale = "free_y") +
   theme_bw(base_size = 14) +
   scale_color_viridis_d() +
-  ylim(0.0, 0.30) +
+  scale_y_log10() +
   xlim(1970, 2006) +
   labs(color = "Region",
-       y = expression(1/phi),
+       y = expression(phi),
        x = "Year") +
-  scale_y_continuous(expand = expansion(mult = c(0.15, 0.15)))
+  scale_y_continuous(expand = expansion(mult = c(0.25, 0.25)))
 
 gg_pred_precis
 
@@ -707,11 +662,11 @@ gg_fig4 <- cowplot::plot_grid(gg_pred_tips, gg_pred_precis, ncol = 1, align = "h
 
 gg_fig4
 
-ggsave("../Structural_Stability_LMEs/figures/Figure 4 - Model Estimates - Mean + Precision.jpeg", plot = gg_fig4, width = 10, height = 6, dpi = 300)
+ggsave("../Scale_Dependence_Structural_Stability_LMEs/Figures/Figure 4 - Model Estimates - Mean + Precision.jpeg", plot = gg_fig4, width = 10, height = 6, dpi = 300)
 
-ggsave("../Structural_Stability_LMEs/figures/Figure 4 - Model Estimates - Precision.jpeg", plot = gg_pred_precis, width = 10, height = 3, dpi = 300)
+ggsave("../Scale_Dependence_Structural_Stability_LMEs/Figures/Figure 4 - Model Estimates - Precision.jpeg", plot = gg_pred_precis, width = 10, height = 3, dpi = 300)
 
-ggsave("../Structural_Stability_LMEs/figures/Figure 4 - Model Estimates - Mean.jpeg", plot = gg_pred_tips, width = 10, height = 3, dpi = 300)
+ggsave("../Scale_Dependence_Structural_Stability_LMEs/Figures/Figure 4 - Model Estimates - Mean.jpeg", plot = gg_pred_tips, width = 10, height = 3, dpi = 300)
 
 #Landings Effect on Precision (Variability in Trophic Structure)
 pred_data_land <- expand.grid(
@@ -735,13 +690,13 @@ pred_data_land$log_phi <- log10(phi_hat_land)
 
 pred_data_land$Region <- factor(pred_data_land$Region, levels=c('NFLS', 'SS', 'NEUS'))
 
-gg_phi_land <- ggplot(pred_data_land, aes(scale_anom_landings, 1/phi, color = Region)) +
+gg_phi_land <- ggplot(pred_data_land, aes(scale_anom_landings, phi, color = Region)) +
   geom_line(linewidth = 2, alpha = 0.8) +
   # facet_wrap(~ Region, scale = "free") +
   labs(x = "Scaled landings", y = expression(1/phi)) +
   scale_color_viridis_d() +
   theme_bw(14) +
-  # ylim(0.0, 0.025) +
+  scale_y_log10(limits = c(25, 600)) +
   theme(legend.position = "none")
 
 gg_phi_land
@@ -767,13 +722,13 @@ pred_data_land_anom$log_phi <- log10(phi_hat_land_anom)
 
 pred_data_land_anom$Region <- factor(pred_data_land_anom$Region, levels=c('NFLS', 'SS', 'NEUS'))
 
-gg_phi_land_anom <- ggplot(pred_data_land_anom, aes(scale_anom_landings, 1/phi, color = Region)) +
+gg_phi_land_anom <- ggplot(pred_data_land_anom, aes(scale_anom_landings, phi, color = Region)) +
   geom_line(linewidth = 2, alpha = 0.8) +
   # facet_wrap(~ Region, scale = "free") +
-  labs(x = "Scaled Landings Anomalies", y = expression(1/phi)) +
+  labs(x = "Scaled Landings Anomalies", y = expression(log(phi))) +
   scale_color_viridis_d() +
   theme_bw(14) +
-  ylim(0.0, 0.025) +
+  scale_y_log10(limits = c(25, 600)) +
   theme(legend.position = "none",
         axis.title.x = element_blank())
 
@@ -800,12 +755,13 @@ pred_data_nao$log_phi <- log10(phi_hat_nao)
 
 pred_data_nao$Region <- factor(pred_data_nao$Region, levels=c('NFLS', 'SS', 'NEUS'))
 
-gg_phi_nao <- ggplot(pred_data_nao, aes(scale_nao, 1/phi, color = Region)) +
+gg_phi_nao <- ggplot(pred_data_nao, aes(scale_nao, phi, color = Region)) +
   geom_line(linewidth = 2, alpha = 0.8) +
   facet_wrap(~ Region, ncol = 1) +
   labs(x = "North Atlantic Oscillation (Scaled)", y = expression(1/phi)) +
   scale_color_viridis_d() +
-  ylim(0.0, 0.025) +
+  # ylim(0.0, 0.025) +
+  scale_y_log10(limits = c(25, 600)) +
   theme_bw(14) +
   theme(legend.position = "none",
         axis.title.x = element_blank())
@@ -819,7 +775,5 @@ gg_phi_land_nao <- cowplot::plot_grid(gg_phi_land_anoms, gg_phi_nao, nrow = 1, a
 
 gg_phi_land_nao
 
-ggsave("../Structural_Stability_LMEs/figures/Figure 5 - TIPs Phi Panel landings NAO.jpeg", plot = gg_phi_land_nao, width = 8, height = 5, dpi = 300)
-
-# ggsave("../Structural_Stability_LMEs/figures/Figure 5 - TIPs Phi Panel NAO.jpeg", plot = gg_phi_nao, width = 5, height = 6, dpi = 300)
+ggsave("../Scale_Dependence_Structural_Stability_LMEs/Figures/Figure 5 - TIPs Phi Panel Landings NAO.jpeg", plot = gg_phi_land_nao, width = 8, height = 5, dpi = 300)
 

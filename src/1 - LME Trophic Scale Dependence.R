@@ -10,22 +10,13 @@ library(ggplot2)
 library(cowplot)
 library(DirichletReg)
 
-source("../Structural_Stability_LMEs/src/Functions.R")
+source("../Scale_Dependence_Structural_Stability_LMEs/src/Functions.R")
 
 # Load Data
-df_lme_sp <- read.csv("../Structural_Stability_LMEs/data/LMEs_TLassignmentbyspecies_LME.csv")
-df_lme_covar <- read_xlsx("../Structural_Stability_LMEs/data/LME_data_14Oct2023.xlsx")
+df_lme_sp <- read.csv("../Scale_Dependence_Structural_Stability_LMEs/data/LME Data/LMEs_TLassignmentbyspecies_LME.csv")
+df_lme_covar <- read_xlsx("../Scale_Dependence_Structural_Stability_LMEs/data/LME Data/LME_data_14Oct2023.xlsx")
 
-# Alternative Trophic Groupings
-# mutate(Trophic_Interval = case_when(
-#   Trophic.level <= 2.8  ~ "2.0-2.8",
-#   Trophic.level > 2.8  & Trophic.level <= 3.2  ~ "2.8-3.2",
-#   Trophic.level > 3.2  & Trophic.level <= 3.7  ~ "3.2-3.7",
-#   Trophic.level > 3.7  & Trophic.level <= 4.2  ~ "3.7-4.2",
-#   Trophic.level > 4.2 ~ "4.2-5.0",
-#   TRUE ~ NA_character_))
-
-
+#Set Trophic Groupings
 df_sp_tis <- df_lme_sp %>%
   filter(! Trophic.level == ".") %>%
   #filter(! Trophic.level < 3.0) %>%
@@ -198,28 +189,5 @@ gg_pyramid_sr_perc <- plot_grid(gg_pyramid_sp, gg_lme_tips, gg_lme_tips_perc,
 gg_pyramid_sr_perc
 
 
-ggsave("../Structural_Stability_LMEs/figures/Figure 2 - TIPs Pyradmid - LME Richness TIPs.jpeg", plot = gg_pyramid_sr_perc, dpi = 300, width = 15, height = 5)
-
-
-#ACF Plots for TIPs
-acf_df <- df_sp_tips_sub %>%
-  group_by(Region, Trophic_interval) %>%
-  summarise(acf = list(acf(tips, plot = FALSE, lag.max = 10))) %>%
-  mutate(acf_df = map(acf, ~data.frame(lag = .x$lag, acf = .x$acf))) %>%
-  dplyr::select(-acf) %>%
-  unnest(acf_df)
-
-ci_df <- df_sp_tips_sub %>%
-  group_by(Region, Trophic_interval) %>%
-  summarise(n = n(),
-            ci = 1.96 / sqrt(n))
-
-ggplot(acf_df, aes(x = as.factor(lag), y = acf)) +  
-  geom_hline(data = ci_df, aes(yintercept = ci), linetype = "dashed", color = "blue", alpha = 0.5) +
-  geom_hline(data = ci_df, aes(yintercept = -ci), linetype = "dashed", color = "blue", alpha = 0.5) +
-  geom_hline(yintercept = 0, color = "black", alpha = 0.5) +
-  geom_col() +
-  facet_wrap(~Region + Trophic_interval) +
-  theme_classic() +
-  labs(x = "Lag", y = "ACF")
+ggsave("../Scale_Dependence_Structural_Stability_LMEs/Figures/Figure 2 - TIPs Pyradmid - LME Richness TIPs.jpeg", plot = gg_pyramid_sr_perc, dpi = 300, width = 15, height = 5)
 

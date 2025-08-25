@@ -13,15 +13,14 @@ library(ggrepel)
 library(beepr)
 library(easystats)
 
-source("../Structural_Stability_LMEs/src/Functions.R")
+source("../Scale_Dependence_Structural_Stability_LMEs/src/Functions.R")
 
 # load data
-df_nfls <- read.csv("../Structural_Stability_LMEs/data/NFLS_NoPelagics_NW_Atlantic_trawlsurveydata.csv", header = T)
+df_nfls <- read.csv("../Scale_Dependence_Structural_Stability_LMEs/Data/Trawl Data/NFLS_NoPelagics_NW_Atlantic_trawlsurveydata_NFLS.csv", header = T)
 
-df_ss <- read.csv("../Structural_Stability_LMEs/data/SS_4VWXsurveydata_Fisher.csv", header = T)
+df_ss <- read.csv("../Scale_Dependence_Structural_Stability_LMEs/Data/Trawl Data/SS_4VWXsurveydata_Fisher.csv", header = T)
 
-df_neus <- read.csv("../Structural_Stability_LMEs/data/NEUS_NoPelagics_NW_Atlantic_trawlsurveydataNumONLY.csv")
-
+df_neus <- read.csv("../Scale_Dependence_Structural_Stability_LMEs/Data/Trawl Data/NEUS_NoPelagics_NW_Atlantic_trawlsurveydataNumONLY.csv")
 
 ##### NFLS Groundfish Community Biomass #####
 df_nfls_sub <-  df_nfls %>%
@@ -205,10 +204,7 @@ gg_dens <- ggplot(data = df_sum_gf, aes(x = Year, y = log10(sum_geom_dens), colo
 
 gg_dens
 
-ggsave("../Structural_Stability_LMEs/figures/Figure SX - Geometric Sum Mean Biomass Densities.jpeg", plot = gg_dens, width = 10, height = 3, dpi = 300)
+ggsave("../Scale_Dependence_Structural_Stability_LMEs/Figures/Figure SX - Geometric Sum Mean Biomass Densities.jpeg", plot = gg_dens, width = 10, height = 3, dpi = 300)
 
-
-cowplot::plot_grid(gg_dens, gg_pred_precis, nrow = 2)
-
-# write.csv(df_sum_gf, "../Structural_Stability_LMEs/data/groundfish sum biomass.csv")
+write.csv(df_sum_gf, "../Scale_Dependence_Structural_Stability_LMEs/Data/Output Data/groundfish sum biomass.csv")
 
