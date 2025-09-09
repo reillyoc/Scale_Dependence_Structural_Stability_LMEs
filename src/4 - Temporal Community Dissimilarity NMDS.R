@@ -1,4 +1,4 @@
-# NMDS on Annual Species Assemblages from 1981 onwards...
+# Bray-Curtis Similarity and Community NMDS on Annual Species Assemblages
 
 # Author(s): Reilly O'Connor
 # Version: 2025-06-25

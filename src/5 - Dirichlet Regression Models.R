@@ -108,6 +108,43 @@ df_temp_harvest_trend_anom_diff <- df_temp_harvest_trend_anom %>%
   mutate(lag_landings_diff = residuals(arima(lag_landings, order = c(0,1,0)))) %>%
   ungroup()
 
+df_temp_harvest_trend_anom_diff$Region <- factor(df_temp_harvest_trend_anom_diff$Region, levels=c('NFLS', 'SS', 'NEUS'))
+
+gg_lag_landings <- ggplot(df_temp_harvest_trend_anom_diff, aes(x = year, y = lag_landings, color = Region)) +
+  geom_line(linewidth = 2) +
+  facet_wrap(~ Region, scale = "free_y") + 
+  xlim(1970, 2005) +
+  scale_color_viridis_d() +
+  theme_bw(base_size = 14)
+
+gg_lag_landings
+
+gg_trend_landings <- ggplot(df_temp_harvest_trend_anom_diff, aes(x = year, y = landings_trend, color = Region)) +
+  geom_line(linewidth = 2) +
+  facet_wrap(~ Region, scale = "free_y") + 
+  xlim(1970, 2005) +
+  scale_color_viridis_d() +
+  theme_bw(base_size = 14)
+
+gg_trend_landings
+
+gg_anom_landings <- ggplot(df_temp_harvest_trend_anom_diff, aes(x = year, y = landings_anom, color = Region)) +
+  geom_line(linewidth = 2) +
+  facet_wrap(~ Region, scale = "free_y") + 
+  xlim(1970, 2005) +
+  scale_color_viridis_d() +
+  theme_bw(base_size = 14)
+
+gg_anom_landings
+
+gg_landings_grid <- cowplot::plot_grid(gg_lag_landings, gg_trend_landings, gg_anom_landings,
+                                       nrow = 3, align = "hv")
+
+gg_landings_grid
+
+ggsave("../Scale_Dependence_Structural_Stability_LMEs/Figures/Figure SX - Landings Decomposition.jpeg", plot = gg_landings_grid, dpi = 300, width = 10, height = 9)
+
+
 
 ##### Organize data, calculate scaled predictor variables, use chao corrected spp rich estimates #####
 df_nfls_sp_sr <- df_sp_tips %>%
@@ -123,7 +160,8 @@ df_sp_sr <- df_sp_tips %>%
   filter(! (Region == "NFLS")) %>%
   dplyr::select(-Trophic_interval) %>%
   group_by(Region) %>%
-  arrange(Region, year)
+  arrange(Region, year) %>%
+  rbind(df_nfls_sp_sr)
 
 df_sp_tips$group_id <- interaction(df_sp_tips$Region, df_sp_tips$Trophic_interval)
 
@@ -150,7 +188,7 @@ df_sp_tips_sub <- df_sp_tips_sr %>%
          scale_landings_diff = scale(lag_landings_diff)[,1],
          scale_year = scale(year)[,1]) %>%
   filter(! (year == 2004)) %>%
-  dplyr::select(year, scale_year, Region, Trophic_Interval = Trophic_interval, tips, scale_sr, scale_nao,  scale_anom_landings, scale_landings, scale_landings_diff, scale_sum_geom_dens, DJFM_NAO_Index, landings_anom, landings_trend, lag_landings_diff) %>%
+  dplyr::select(year, scale_year, Region, Trophic_Interval = Trophic_interval, tips, scale_sr, scale_nao,  scale_anom_landings, scale_landings, scale_landings_diff, scale_sum_geom_dens, DJFM_NAO_Index, landings_anom, landings_trend, lag_landings_diff, total_sr) %>%
   mutate(Region = factor(Region))
 
 df_sp_tis <- df_sp_tips_sub %>%
@@ -159,7 +197,7 @@ df_sp_tis <- df_sp_tips_sub %>%
               names_from = Trophic_Interval)
 
 df_sp_tis_covar <- df_sp_tips_sub %>%
-  distinct(year, scale_year, Region, scale_sr, scale_nao, scale_anom_landings, scale_landings, scale_landings_diff, scale_sum_geom_dens, DJFM_NAO_Index, landings_anom, landings_trend, lag_landings_diff) %>%
+  distinct(year, scale_year, Region, scale_sr, scale_nao, scale_anom_landings, scale_landings, scale_landings_diff, scale_sum_geom_dens, DJFM_NAO_Index, landings_anom, landings_trend, lag_landings_diff, total_sr) %>%
   left_join(df_sp_tis, by = join_by(year, Region))
 
 df_sp_tips_sub$Region <- factor(df_sp_tips_sub$Region, levels=c('NFLS', 'SS', 'NEUS'))
@@ -177,12 +215,10 @@ gg_tips <- ggplot(df_sp_tips_sub, aes(x = year, y = tips, color = Trophic_Interv
   labs(x = "Year",
        y = "Trophic Interval Proportions (TIPs)") +
   theme_bw(base_size = 14) +
-  theme(legend.position = "none") +
   ylim(-0.05, 0.65) +
-  xlim(1973, 2004) +
+  xlim(1970, 2005) +
   facet_wrap(~ Region) +
-  theme(text = element_text(family = "Arial"), 
-        legend.position = "none") 
+  theme(text = element_text(family = "Arial"))
 
 gg_tips
 
@@ -197,37 +233,26 @@ gg_tips_bc
 
 # ggsave("../Scale_Dependence_Structural_Stability_LMEs/Figures/Figure 3 - Temporal TIPs + BC.jpeg", plot = gg_tips_bc, dpi = 300, width = 10, height = 8)
 
+df_sp_tips_sub
 
-#Look for change over time for regions and trophic intervals
-df_sp_tis_covar_nfls <- df_sp_tis_covar %>%
-  filter(Region == "NFLS")
+gg_sr <- ggplot(df_sp_tips_sub %>% filter(Trophic_Interval == "3.0-3.4"), aes(x = year, y = total_sr, color = Region)) +
+  geom_line(alpha = 0.8, linewidth = 2) + 
+  labs(x = "Year",
+       y = "Chao Corrected Total Species Richness") +
+  theme_bw(base_size = 14) +
+  # ylim(-0.05, 0.65) +
+  xlim(1970, 2005) +
+  facet_wrap(~ Region, scale = "free_y") +
+  scale_color_viridis_d() +
+  theme(text = element_text(family = "Arial"))
 
-hist(df_sp_tis_covar_nfls$`3.0-3.4`)
-hist(df_sp_tis_covar_nfls$`3.5-3.9`)
-hist(df_sp_tis_covar_nfls$`4.0-4.4`)
-hist(df_sp_tis_covar_nfls$`4.5-4.9`)
+gg_sr
 
-summary(lm(`3.0-3.4` ~ year, data = df_sp_tis_covar_nfls))
-summary(lm(`3.5-3.9` ~ year, data = df_sp_tis_covar_nfls))
-summary(lm(`4.0-4.4` ~ year, data = df_sp_tis_covar_nfls))
-summary(lm(`4.5-4.9` ~ year, data = df_sp_tis_covar_nfls))
+gg_tips_sr <- plot_grid(gg_tips, gg_sr, nrow = 2, align = "hv")
 
-df_sp_tis_covar_ss <- df_sp_tis_covar %>%
-  filter(Region == "SS")
+gg_tips_sr
 
-summary(lm(`3.0-3.4` ~ year, data = df_sp_tis_covar_ss))
-summary(lm(`3.5-3.9` ~ year, data = df_sp_tis_covar_ss))
-summary(lm(`4.0-4.4` ~ year, data = df_sp_tis_covar_ss))
-summary(lm(`4.5-4.9` ~ year, data = df_sp_tis_covar_ss))
-
-df_sp_tis_covar_neus <- df_sp_tis_covar %>%
-  filter(Region == "NEUS")
-
-
-summary(lm(`3.0-3.4` ~ year, data = df_sp_tis_covar_neus))
-summary(lm(`3.5-3.9` ~ year, data = df_sp_tis_covar_neus))
-summary(lm(`4.0-4.4` ~ year, data = df_sp_tis_covar_neus))
-summary(lm(`4.5-4.9` ~ year, data = df_sp_tis_covar_neus))
+ggsave("../Scale_Dependence_Structural_Stability_LMEs/Figures/Figure 3 - Temporal TIPs + SR.jpeg", plot = gg_tips_sr, dpi = 300, width = 10, height = 6)
 
 
 ##### Start Dirichlet Model Selection Process #####
@@ -370,8 +395,9 @@ anova.DirichletRegModel(mod2_all, mod2_all.1, mod2_all.2, mod2_all.3)
 AICctab(mod2_all, mod2_all.1, mod2_all.2, mod2_all.3)
 
 #Drop variables from mean equation, landings and year model similar fits
-#Select landings model as it is a measured variable and a slightly bettter fit than year
-#Drop year...
+#Landings trend close to similar fit with Year, AIC Diff = 0.4... Revisit back to this at end
+#Continue with landings model as it is a measured variable and a slightly better fit than year
+
 mod3_all <-  DirichReg(Y ~ scale_nao + scale_landings + scale_anom_landings + (scale_year)*Region |
                          scale_landings + scale_anom_landings + (scale_nao)*Region,
                          data = df_sp_tis_covar,
@@ -438,6 +464,7 @@ summary(mod4_all.3)
 anova.DirichletRegModel(mod3_all.2, mod4_all, mod4_all.1, mod4_all.2, mod4_all.3)
 AICctab(mod3_all.2, mod4_all, mod4_all.1, mod4_all.2, mod4_all.3)
 
+#NAO close to similar fit with Year, AIC Diff = 1.3... Come back to this later
 #Finish by optimizing precision model
 mod4_all.4 <-  DirichReg(Y ~ scale_nao + Region |
                            scale_landings + (scale_nao)*Region,
@@ -469,13 +496,43 @@ mod4_all.7 <-  DirichReg(Y ~ Region |
                          verbosity = 1)
 summary(mod4_all.7)
 
-anova.DirichletRegModel(mod4_all.2, mod4_all.7)
+anova.DirichletRegModel(mod4_all.2, mod4_all.4, mod4_all.5, mod4_all.6, mod4_all.7)
 
-#mod4_all.2 is the best fit model after model selection
-#mod4_all.4 is similar fit, but given anova suggests that removing scale_anom_landings significantly reduces fit
+###### Final Model Comparison, substituting year back in for NAO and Landings (Similar Fits Earlier) #####
+mod_comp <-  DirichReg(Y ~ scale_nao + Region |
+                         scale_landings + scale_anom_landings + scale_nao*Region,
+                       data = df_sp_tis_covar,
+                       model = "alternative", control = list(iterlim = 6000, tol1 = 1e-6, tol2 = 1e-10),
+                       verbosity = 1)
+summary(mod_comp)
+
+mod_comp.1 <-  DirichReg(Y ~ scale_year + Region |
+                           scale_landings + scale_anom_landings + scale_nao*Region,
+                         data = df_sp_tis_covar,
+                         model = "alternative", control = list(iterlim = 6000, tol1 = 1e-6, tol2 = 1e-10),
+                         verbosity = 1)
+summary(mod_comp.1)
+
+mod_comp.2 <-  DirichReg(Y ~ scale_nao + Region |
+                           scale_year + scale_anom_landings + scale_nao*Region,
+                         data = df_sp_tis_covar,
+                         model = "alternative", control = list(iterlim = 6000, tol1 = 1e-6, tol2 = 1e-10),
+                         verbosity = 1)
+summary(mod_comp.2)
+
+mod_comp.3 <-  DirichReg(Y ~ scale_year + Region |
+                           scale_year + scale_anom_landings + scale_nao*Region,
+                         data = df_sp_tis_covar,
+                         model = "alternative", control = list(iterlim = 6000, tol1 = 1e-6, tol2 = 1e-10),
+                         verbosity = 1)
+summary(mod_comp.3)
+
+AICtab(mod_comp, mod_comp.1, mod_comp.2, mod_comp.3)
+
+#mod_comp is the best fit model after model selection
 #Results are similar between models
 ##### Plot Final Model #####
-mod_final <- mod4_all.2
+mod_final <- mod_comp
 summary.DirichletRegModel(mod_final)
 confint.DirichletRegModel(mod_final, level = 0.90)
 
@@ -538,7 +595,7 @@ df_sp_tis_covar_long <- df_sp_tis_covar %>%
 df_gfb_windows <- tribble(
   ~Region, ~xintercept,
   "NFLS",  1990,
-  "NFLS",  1993,
+  "NFLS",  1994,
   "SS",    1992,
   "SS",    1998,
   "NEUS",  1981,
@@ -633,7 +690,7 @@ df_pred.phi <- pred.phi %>%
 df_gfb_windows <- tribble(
   ~Region, ~xintercept,
   "NFLS",  1990,
-  "NFLS",  1993,
+  "NFLS",  1994,
   "SS",    1992,
   "SS",    1998,
   "NEUS",  1981,
@@ -776,4 +833,79 @@ gg_phi_land_nao <- cowplot::plot_grid(gg_phi_land_anoms, gg_phi_nao, nrow = 1, a
 gg_phi_land_nao
 
 ggsave("../Scale_Dependence_Structural_Stability_LMEs/Figures/Figure 5 - TIPs Phi Panel Landings NAO.jpeg", plot = gg_phi_land_nao, width = 8, height = 5, dpi = 300)
+
+
+confint.DirichletRegModel(mod_final, level = 0.90)
+
+df_precision_coef_landings <- data.frame(parameter = c("Commercial Harvest Trend", "Commercial Harvest Anomalies"),
+                                estimate = c(-0.246, -0.160),
+                                lower = c(-0.393, -0.305),
+                                upper = c(-0.100, -0.015))
+
+gg_precis_coef_landings <- ggplot(df_precision_coef_landings, aes(y = parameter, x = estimate)) +
+  geom_vline(xintercept = 0, linetype = "dashed", alpha = 0.4) +
+  geom_errorbarh(aes(xmin = lower, xmax = upper), height = 0) +
+  geom_point(size = 3, shape = 21, stroke = 0.5, color = "black", fill = "aliceblue") +
+  xlim(-0.5, 0.5) +
+  theme_bw(base_size = 14) +
+  theme(axis.text.y = element_blank())
+
+gg_precis_coef_landings
+
+
+#Set NFLS to Reference Region
+df_sp_tis_covar$Region <- relevel(df_sp_tis_covar$Region, ref = "NFLS")
+
+mod_final_nfls <- DirichReg(Y ~ scale_nao + Region |
+                              scale_landings + scale_anom_landings + (scale_nao)*Region,
+                            data = df_sp_tis_covar,
+                            model = "alternative", control = list(iterlim = 6000, tol1 = 1e-6, tol2 = 1e-10),
+                            verbosity = 1)
+
+confint.DirichletRegModel(mod_final_nfls, level = 0.90)
+
+#Set NEUS to Reference Region
+df_sp_tis_covar$Region <- relevel(df_sp_tis_covar$Region, ref = "NEUS")
+
+mod_final_neus <-  DirichReg(Y ~ scale_nao + Region |
+                               scale_landings + scale_anom_landings + (scale_nao)*Region,
+                             data = df_sp_tis_covar,
+                             model = "alternative", control = list(iterlim = 6000, tol1 = 1e-6, tol2 = 1e-10),
+                             verbosity = 1)
+
+confint.DirichletRegModel(mod_final_neus, level = 0.90)
+
+#Reset SS to Reference Region
+df_sp_tis_covar$Region <- relevel(df_sp_tis_covar$Region, ref = "SS")
+
+df_precision_coef_nao <- data.frame(Region = c("NFLS", "SS", "NEUS"),
+                                         estimate = c(-0.039, -0.142, 0.622),
+                                         lower = c(-0.269, -0.359, 0.287),
+                                         upper = c(0.191, 0.074, 0.958))
+
+df_precision_coef_nao$Region <- factor(df_precision_coef_nao$Region, levels=c('NFLS', 'SS', 'NEUS'))
+
+gg_precis_coef_nao <- ggplot(df_precision_coef_nao, aes(y = rev(Region), x = estimate, fill = Region)) +
+  geom_vline(xintercept = 0, linetype = "dashed", alpha = 0.4) +
+  geom_errorbarh(aes(xmin = lower, xmax = upper), height = 0) +
+  geom_point(size = 3, shape = 21, stroke = 0.5, color = "black") +
+  xlim(-1, 1) +
+  theme_bw(base_size = 14) +
+  scale_fill_viridis_d() +
+  theme(legend.position = "none")
+
+gg_precis_coef_nao
+
+
+gg_precis_coef <- cowplot::plot_grid(gg_precis_coef_landings, gg_precis_coef_nao, ncol = 2, align = "hv")
+
+gg_precis_coef
+
+ggsave("../Scale_Dependence_Structural_Stability_LMEs/Figures/Figure 5 - TIPs Phi Forest Plot Landings NAO.jpeg", plot = gg_precis_coef, width = 6, height = 3, dpi = 300)
+
+ 
+
+
+
+
 

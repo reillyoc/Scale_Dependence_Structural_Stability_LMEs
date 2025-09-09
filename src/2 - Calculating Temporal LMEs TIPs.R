@@ -57,14 +57,16 @@ df_sp_accum_by_year_nfls <- df_nfls %>%
   unnest(sac_df)
 
 
-ggplot(df_sp_accum_by_year_nfls, aes(x = sites, y = richness)) +
+gg_nfls_sac <- ggplot(df_sp_accum_by_year_nfls, aes(x = sites, y = richness)) +
   geom_ribbon(aes(ymin = richness - sd, ymax = richness + sd), fill = "steelblue") +
   geom_line(size = 1) +
-  facet_wrap(~ year, nrow = 3) +
+  facet_wrap(~ year, nrow = 4) +
   labs(x = "Number of Tows (sites)",
        y = "Species Richness",
        title = "Species–accumulation curves by year") +
   theme_classic()
+
+gg_nfls_sac
 
 df_sites_by_year_nfls <- df_sp_accum_by_year_nfls %>%
   dplyr::select(year, sites) %>%
@@ -105,15 +107,16 @@ df_sp_accum_by_year <- df_ss %>%
   dplyr::select(year, sac_df) %>%
   unnest(sac_df)
 
-ggplot(df_sp_accum_by_year, aes(x = sites, y = richness)) +
+gg_ss_sac <- ggplot(df_sp_accum_by_year, aes(x = sites, y = richness)) +
   geom_ribbon(aes(ymin = richness - sd, ymax = richness + sd), fill = "steelblue") +
   geom_line(size = 1) +
-  facet_wrap(~ year, nrow = 3) +
+  facet_wrap(~ year, nrow = 4) +
   labs(x = "Number of Tows (sites)",
        y = "Species Richness",
        title = "Species–accumulation curves by year") +
   theme_classic()
 
+gg_ss_sac
 
 df_sites_by_year <- df_sp_accum_by_year %>%
   dplyr::select(year, sites) %>%
@@ -161,14 +164,16 @@ df_sp_accum_by_year_neus <- df_neus %>%
   dplyr::select(year, sac_df) %>%
   unnest(sac_df)
 
-ggplot(df_sp_accum_by_year_neus, aes(x = sites, y = richness)) +
+gg_neus_sac <- ggplot(df_sp_accum_by_year_neus, aes(x = sites, y = richness)) +
   geom_ribbon(aes(ymin = richness - sd, ymax = richness + sd), fill = "steelblue") +
   geom_line(size = 1) +
-  facet_wrap(~ year, nrow = 3) +
+  facet_wrap(~ year, nrow = 4) +
   labs(x = "Number of Tows (sites)",
        y = "Species Richness",
        title = "Species–accumulation curves by year") +
   theme_classic()
+
+gg_neus_sac
 
 df_sites_by_year_neus <- df_sp_accum_by_year_neus %>%
   dplyr::select(year, sites) %>%
@@ -242,7 +247,13 @@ df_neus_sp$Region <- "NEUS"
 
 df_lme_sp <- rbind(df_nfls_sp, df_ss_sp, df_neus_sp)
 
-write.csv(df_lme_sp, "../Scale_Dependence_Structural_Stability_LMEs/Data/Output Data/number_sites_regions.csv")
+# write.csv(df_lme_sp, "../Scale_Dependence_Structural_Stability_LMEs/Data/Output Data/number_sites_regions.csv")
+
+ggsave("../Scale_Dependence_Structural_Stability_LMEs/Figures/Figure S2 - NFLS Species Accumulation Curves.jpeg", plot = gg_nfls_sac, dpi = 300, width = 14, height = 7)
+
+ggsave("../Scale_Dependence_Structural_Stability_LMEs/Figures/Figure S3 - SS Species Accumulation Curves.jpeg", plot = gg_ss_sac, dpi = 300, width = 14, height = 7)
+
+ggsave("../Scale_Dependence_Structural_Stability_LMEs/Figures/Figure S4 - NEUS Species Accumulation Curves.jpeg", plot = gg_neus_sac, dpi = 300, width = 14, height = 7)
 
 ##### Quantifying Species Richness by Trophic Interval & TIPs #####
 #NFLS
@@ -563,18 +574,22 @@ ci_df <- df_sp_tips_sub %>%
   summarise(n = n(),
             ci = 1.96 / sqrt(n))
 
+
+acf_df$Region <- factor(acf_df$Region, levels=c('NFLS', 'SS', 'NEUS'))
+ci_df$Region <- factor(ci_df$Region, levels=c('NFLS', 'SS', 'NEUS'))
+
 gg_tips_acf <- ggplot(acf_df, aes(x = as.factor(lag), y = acf)) +  
   geom_hline(data = ci_df, aes(yintercept = ci), linetype = "dashed", color = "blue", alpha = 0.5) +
   geom_hline(data = ci_df, aes(yintercept = -ci), linetype = "dashed", color = "blue", alpha = 0.5) +
   geom_hline(yintercept = 0, color = "black", alpha = 0.5) +
   geom_col() +
   facet_wrap(~Region + Trophic_interval) +
-  theme_classic() +
+  theme_bw(base_size = 14) +
   labs(x = "Lag", y = "ACF")
 
 gg_tips_acf
 
-ggsave("../Scale_Dependence_Structural_Stability_LMEs/Figures/Figure SX - TIPs ACF.jpeg", plot = gg_tips_acf, dpi = 300, width = 15, height = 5)
+ggsave("../Scale_Dependence_Structural_Stability_LMEs/Figures/Figure SX - TIPs ACF.jpeg", plot = gg_tips_acf, dpi = 300, width = 10, height = 9)
 
 write.csv(df_sp_tips, "../Scale_Dependence_Structural_Stability_LMEs/Data/Output Data/richness_tips_split_chao.csv")
 

@@ -1,6 +1,6 @@
 # Investigating Scale Dependence in Large Marine Ecosystems
 
-# Author(s): Reilly O'Connor
+# Author(s): Reilly O'Connor & Marie Gutgesell
 # Version: 2025-06-13
 
 # Load Pkgs
@@ -9,6 +9,9 @@ library(readxl)
 library(ggplot2)
 library(cowplot)
 library(DirichletReg)
+library(vegan)
+library(janitor)
+library(spaa)
 
 source("../Scale_Dependence_Structural_Stability_LMEs/src/Functions.R")
 
@@ -41,7 +44,10 @@ df_lme <- df_sp_tis %>%
   reframe(sr = n(),
           total_sr = mean(total_sr),
           tips = sr/total_sr) %>%
-  filter(total_sr < 2000)
+  filter(total_sr < 2000) %>%
+  arrange(total_sr, Trophic_Interval, LME)
+
+unique(df_lme$LME)
 
 df_lme_dir <- df_lme %>%
   dplyr::select(-sr) %>%
@@ -190,4 +196,77 @@ gg_pyramid_sr_perc
 
 
 ggsave("../Scale_Dependence_Structural_Stability_LMEs/Figures/Figure 2 - TIPs Pyradmid - LME Richness TIPs.jpeg", plot = gg_pyramid_sr_perc, dpi = 300, width = 15, height = 5)
+
+
+
+##### Species Turnover (Bray Curtis Similarity LMEs) #####
+s_df <- df_lme_sp %>%
+  select(Species, LME) %>%
+  filter(! (LME == "Indonesian Sea" | LME == "South China Sea")) %>%
+  mutate(
+    Species  = trimws(Species),
+    LME      = trimws(LME),
+    presence = 1L
+  ) %>%
+  distinct() %>%
+  pivot_wider(
+    names_from  = LME,
+    values_from = presence,
+    values_fill = list(presence = 0), # <- named list fixes your error
+    values_fn   = list(presence = max) # in case of duplicates per Species–LME
+  )
+
+##Reformat matrix so is site by species
+s_matrix <- t(s_df)
+s_matrix <- as.data.frame(s_matrix)
+s_matrix <- row_to_names(s_matrix, row_number = 1)
+##make sure values are all numeric
+s_matrix[] <- lapply(s_matrix, function(x) as.numeric(as.character(x)))
+str(s_matrix)
+
+##Calculate B-C disimilarity
+bc_spatial <- vegdist(s_matrix, method = "bray")
+bc_spatial_matrix <- as.matrix(bc_spatial)
+##transform to % similarity
+bc_spatial_similarity <- (1 - bc_spatial_matrix)*100
+
+##Calculate # of LMEs in each 10% BC similarity
+##Reorganize matrix
+bc_spatial_similarity1<- as.dist(bc_spatial_similarity)
+bc_spatial_similarity_list <- dist2list(bc_spatial_similarity1)%>%
+  unite(Pair, col, row) %>%
+  rename(bc_sim = "value")
+
+##filter out only 1 of each pair and remove same site pairs
+bc_spatial_similarity_df <- bc_spatial_similarity_list %>%
+  separate(Pair, into = c("Site1", "Site2"), sep = "_") %>%
+  mutate(
+    Site1 = pmin(Site1, Site2),
+    Site2 = pmax(Site1, Site2)
+  ) %>%
+  filter(Site1 != Site2) %>%
+  mutate(Pair = paste(Site1, Site2, sep = "_")) %>%
+  distinct(Pair, .keep_all = TRUE) %>%
+  select(Pair, bc_sim) 
+
+##Add column for each 10% bin category
+bc_spatial_similarity_df <- bc_spatial_similarity_df %>%
+  mutate(category = case_when(
+    bc_sim >=79 ~ 79,
+    bc_sim >=69 & bc_sim <79 ~ 69,
+    bc_sim >=59 & bc_sim <69 ~ 59,
+    bc_sim >=49 & bc_sim <59 ~ 49,
+    bc_sim >=39 & bc_sim <49 ~ 39,
+    bc_sim >=29 & bc_sim <39 ~ 29,
+    bc_sim >=19 & bc_sim <29 ~ 19,
+    bc_sim >=9 & bc_sim <19 ~ 9,
+    bc_sim >=0.9 & bc_sim <9 ~ 0.9,
+    bc_sim >=0.01 & bc_sim <0.9 ~ 0.01,
+    bc_sim >= 0.0 ~ 0,
+  ))
+
+##Number of lmes per category
+bc_summary <- bc_spatial_similarity_df %>%
+  group_by(category) %>%
+  count()
 
