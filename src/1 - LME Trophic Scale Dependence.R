@@ -13,7 +13,7 @@ library(vegan)
 library(janitor)
 library(spaa)
 
-source("../Scale_Dependence_Structural_Stability_LMEs/src/Functions.R")
+source("../Scale_Dependence_Structural_Stability_LMEs/src/0 - Functions.R")
 
 # Load Data
 df_lme_sp <- read.csv("../Scale_Dependence_Structural_Stability_LMEs/data/LME Data/LMEs_TLassignmentbyspecies_LME.csv")
@@ -68,6 +68,10 @@ df_pred <- as.data.frame(pred)
 df_pred$total_sr <- newdata$total_sr
 df_long <- pivot_longer(df_pred, cols = -total_sr, names_to = "TIP", values_to = "Proportion")
 
+df_long$TIP <- factor(df_long$TIP, levels=c('V1', 'V2', 'V3', 'V4', 'V5'))
+df_lme$Trophic_Interval <- factor(df_lme$Trophic_Interval, levels=c('4.5-4.9', '4.0-4.4', '3.5-3.9', '3.0-3.4', '2.0-2.9'))
+
+
 gg_lme_tips <- ggplot(df_long, aes(x = total_sr, y = Proportion, color = TIP)) +
   geom_line(linewidth = 2) +
   geom_point(data = df_lme, aes(x = total_sr, y = tips, fill = Trophic_Interval, color = NA), shape = 21, stroke = 0.5, alpha = 0.5, size = 2, color = "black") +
@@ -75,6 +79,8 @@ gg_lme_tips <- ggplot(df_long, aes(x = total_sr, y = Proportion, color = TIP)) +
   scale_fill_manual(values = rev(c("#7f7f7f", "#4245c4", "#f78c2f",  "#649f4d", "#b61790"))) +
   scale_color_manual(values = c("#7f7f7f", "#4245c4", "#f78c2f",  "#649f4d", "#b61790")) +
   theme_bw(base_size = 16) +
+  scale_x_continuous(breaks = scales::pretty_breaks()) +
+  scale_y_continuous(breaks = scales::pretty_breaks()) +
   theme(legend.position = "none",
         text = element_text(family = "Arial"))
 
@@ -144,7 +150,7 @@ gg_lme_tips_perc <- ggplot(df_all_windows_mean, aes(x = mean_perc_diff, y = Trop
   scale_fill_manual(values = (c("#7f7f7f", "#4245c4", "#f78c2f",  "#649f4d", "#b61790"))) +
   scale_color_manual(values = c("#7f7f7f", "#4245c4", "#f78c2f",  "#649f4d", "#b61790")) +
   theme_bw(base_size = 16) +
-  xlim(-3, 3) +
+  scale_x_continuous(limits = c(-3, 3), breaks = scales::pretty_breaks()) +
   theme(legend.position = "none",
         text = element_text(family = "Arial"))
 
@@ -195,7 +201,7 @@ gg_pyramid_sr_perc <- plot_grid(gg_pyramid_sp, gg_lme_tips, gg_lme_tips_perc,
 gg_pyramid_sr_perc
 
 
-ggsave("../Scale_Dependence_Structural_Stability_LMEs/Figures/Figure 2 - TIPs Pyradmid - LME Richness TIPs.jpeg", plot = gg_pyramid_sr_perc, dpi = 300, width = 15, height = 5)
+ggsave("../Scale_Dependence_Structural_Stability_LMEs/Figures/Figure 2 - TIPs Pyradmid - LME Richness TIPs.jpeg", plot = gg_pyramid_sr_perc, dpi = 300, width = 12, height = 4)
 
 
 
