@@ -274,6 +274,20 @@ df_nfls_pa <- df_nfls  %>%
   group_by(towid, year, Trophic_interval, spcode) %>%
   summarize(pres = as.integer(mean(nopertow) > 0), .groups = "drop")
 
+#Check the number of times a species was recorded once and twice per year...
+species_counts <- df_nfls_pa %>%
+  group_by(year, spcode, Trophic_interval) %>%
+  summarise(n_obs = sum(pres), .groups = "drop")
+
+singleton_doubleton_summary <- species_counts %>%
+  filter(n_obs %in% c(1, 2)) %>%
+  group_by(year, n_obs, Trophic_interval) %>%
+  summarise(n_species = n(), .groups = "drop") %>%
+  tidyr::pivot_wider(names_from = n_obs, values_from = n_species, names_prefix = "n_obs_", values_fill = 0) %>%
+  mutate(f1f2_ratio = n_obs_1/n_obs_2)
+
+print(singleton_doubleton_summary)
+
 df_nfls_chao2_ti <- tibble()
 
 Years <- df_nfls_pa %>%
@@ -369,6 +383,20 @@ df_ss_pa <- df_ss %>%
   group_by(towid, year, Trophic_interval, spcode) %>%
   summarize(pres = as.integer(mean(nopertow) > 0), .groups = "drop")
 
+#Check the number of times a species was recorded once and twice per year...
+species_counts <- df_ss_pa %>%
+  group_by(year, spcode, Trophic_interval) %>%
+  summarise(n_obs = sum(pres), .groups = "drop")
+
+singleton_doubleton_summary <- species_counts %>%
+  filter(n_obs %in% c(1, 2)) %>%
+  group_by(year, n_obs, Trophic_interval) %>%
+  summarise(n_species = n(), .groups = "drop") %>%
+  tidyr::pivot_wider(names_from = n_obs, values_from = n_species, names_prefix = "n_obs_", values_fill = 0) %>%
+  mutate(f1f2_ratio = n_obs_1/n_obs_2)
+
+print(singleton_doubleton_summary)
+
 df_ss_chao2_ti <- tibble()
 
 Years <- df_ss_pa %>%
@@ -463,6 +491,21 @@ df_neus_pa <- df_neus  %>%
            TRUE ~ NA_character_)) %>%
   group_by(towid, year, Trophic_interval, spcode) %>%
   summarize(pres = as.integer(mean(nopertow) > 0), .groups = "drop")
+
+#Check the number of times a species was recorded once and twice per year...
+species_counts <- df_neus_pa %>%
+  group_by(year, spcode, Trophic_interval) %>%
+  summarise(n_obs = sum(pres), .groups = "drop")
+
+singleton_doubleton_summary <- species_counts %>%
+  filter(n_obs %in% c(1, 2)) %>%
+  group_by(year, n_obs, Trophic_interval) %>%
+  summarise(n_species = n(), .groups = "drop") %>%
+  tidyr::pivot_wider(names_from = n_obs, values_from = n_species, names_prefix = "n_obs_", values_fill = 0) %>%
+  mutate(f1f2_ratio = n_obs_1/n_obs_2)
+
+print(singleton_doubleton_summary)
+
 
 df_neus_chao2_ti <- tibble()
 
