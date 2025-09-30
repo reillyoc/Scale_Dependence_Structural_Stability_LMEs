@@ -13,7 +13,7 @@ library(ggrepel)
 library(beepr)
 library(easystats)
 
-source("../Scale_Dependence_Structural_Stability_LMEs/src/Functions.R")
+source("../Scale_Dependence_Structural_Stability_LMEs/src/0 - Functions.R")
 
 # load data
 df_nfls_nm <- read.csv("../Scale_Dependence_Structural_Stability_LMEs/Data/Trawl Data/NFLS_NoPelagics_NW_Atlantic_trawlsurveydata_NFLS.csv", header = T)

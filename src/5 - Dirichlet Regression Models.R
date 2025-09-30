@@ -380,7 +380,7 @@ models_interaction <- mclapply(unique_formulas, function(f) {
 }, mc.cores = num_cores)
 
 #Save models
-saveRDS(models_interaction, file = "../Scale_Dependence_Structural_Stability_LMEs/Data/Output Data/dirichlet_models.rds", compress = "xz")
+# saveRDS(models_interaction, file = "../Scale_Dependence_Structural_Stability_LMEs/Data/Output Data/dirichlet_models.rds", compress = "xz")
 
 # Load models
 # models_interaction <- readRDS("../Scale_Dependence_Structural_Stability_LMEs/Data/Output Data/dirichlet_models.rds")
@@ -403,12 +403,12 @@ df_model_selection_fin <- df_model_selection %>%
 
 ###### Subset Top Candidate Models based on AICc #####
 df_model_selection_fin %>%
-  filter(AICc_diff >= -4) %>%
+  filter(AICc_diff >= -2.6) %>%
   arrange(AICc)
 
 ##### Check Candidate Models & Summaries #####
-models_interaction[[166]]$call
-summary(models_interaction[[452]])
+models_interaction[[2134]]$call
+summary(models_interaction[[1478]])
 
 
 ##### Plot Top Model #####

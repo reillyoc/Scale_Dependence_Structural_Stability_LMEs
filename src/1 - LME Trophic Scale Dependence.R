@@ -74,7 +74,7 @@ gg_lme_tips <- ggplot(df_long, aes(x = total_sr, y = Proportion, color = TIP)) +
   labs(x = "Total Species Richness", y = "Estimated Trophic Interval Proportions", color = "Trophic Interval") +
   scale_fill_manual(values = rev(c("#7f7f7f", "#4245c4", "#f78c2f",  "#649f4d", "#b61790"))) +
   scale_color_manual(values = c("#7f7f7f", "#4245c4", "#f78c2f",  "#649f4d", "#b61790")) +
-  theme_bw(base_size = 14) +
+  theme_bw(base_size = 16) +
   theme(legend.position = "none",
         text = element_text(family = "Arial"))
 
@@ -143,7 +143,7 @@ gg_lme_tips_perc <- ggplot(df_all_windows_mean, aes(x = mean_perc_diff, y = Trop
   labs(x = "Average Percent Change Per 25 Species", y = "Trophic Interval", color = "Trophic Interval") +
   scale_fill_manual(values = (c("#7f7f7f", "#4245c4", "#f78c2f",  "#649f4d", "#b61790"))) +
   scale_color_manual(values = c("#7f7f7f", "#4245c4", "#f78c2f",  "#649f4d", "#b61790")) +
-  theme_bw(base_size = 14) +
+  theme_bw(base_size = 16) +
   xlim(-3, 3) +
   theme(legend.position = "none",
         text = element_text(family = "Arial"))
@@ -171,7 +171,7 @@ gg_pyramid_sp <- ggplot(df_pyramid_sp, aes(x = TIP_mean, y = Trophic_Interval, f
   geom_errorbar(aes(xmin = TIP_mean - TIP_se / 2, xmax = TIP_mean + TIP_se / 2), 
                 width = 0.2, color = "black") +  # Error bars, symmetric
   labs(x = "Propotion of Species Richness", y = "Trophic Interval") +
-  theme_bw(base_size = 14) +
+  theme_bw(base_size = 16) +
   scale_fill_manual(values = c("#7f7f7f", "#4245c4", "#f78c2f",  "#649f4d", "#b61790")) +
   theme(
     legend.position = "none", 
