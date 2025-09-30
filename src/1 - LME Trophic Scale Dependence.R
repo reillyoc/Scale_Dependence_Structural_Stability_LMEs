@@ -54,13 +54,14 @@ df_lme_dir <- df_lme %>%
   pivot_wider(values_from = tips, names_from = Trophic_Interval, values_fill = 0) %>%
   mutate(scale_sr = scale(total_sr)[,1])
 
-# Convert your data to Dirichlet format
+#Convert data for use with Dirichlet reg
 df_lme_dir$Y <- DR_data(df_lme_dir[, c("2.0-2.9", "3.0-3.4", "3.5-3.9", "4.0-4.4", "4.5-4.9")])  # species proportions
 
-# Fit the Dirichlet regression model
+#Fit model
 mod1 <- DirichReg(Y ~ total_sr, data = df_lme_dir, control = list(iterlim = 6000, tol1 = 1e-6, tol2 = 1e-12), verbosity = 1)
 summary(mod1)
 
+#Generate predictions from data
 newdata <- data.frame(total_sr = seq(min(df_lme_dir$total_sr), max(df_lme_dir$total_sr), length.out = 100))
 pred <- predict(mod1, newdata = newdata, type = "response")
 
@@ -88,27 +89,27 @@ gg_lme_tips
 
 
 ##### Percent change per ~ 20-100 species ######
-# Create an empty list to store results
+#Empty list to store ze Results
 diff_list <- list()
 
-# Define your windows
+#Window min, max n length
 windows <- seq(100, 1900, by = 25)
 
-# Loop over each window
+#Loop over windows
 for (start_val in windows) {
   end_val <- start_val + 25
   
-  # Make new data for prediction
+  #Make new data for prediction
   newdata_perc <- data.frame(total_sr = seq(start_val, end_val, length.out = 100))
   pred_perc <- predict(mod1, newdata = newdata_perc, type = "response")
   
-  # Reshape predictions
+  #Re-format predictions
   df_pred_perc <- as.data.frame(pred_perc)
   df_pred_perc$total_sr <- newdata_perc$total_sr
   df_long_perc <- tidyr::pivot_longer(df_pred_perc, cols = -total_sr, 
                                       names_to = "TIP", values_to = "Proportion")
   
-  # Calculate percentage point change in the window
+  #Calculate percentage change in the species  window
   df_prop_diff <- df_long_perc %>% 
     group_by(TIP) %>%
     summarise(
@@ -125,7 +126,7 @@ for (start_val in windows) {
   diff_list[[length(diff_list) + 1]] <- df_prop_diff
 }
 
-# Combine into one dataframe
+#Combine into a single dataframe
 df_all_windows <- bind_rows(diff_list)
 str(df_all_windows)
 
@@ -171,7 +172,7 @@ df_pyramid_sp$Trophic_Interval <- ordered(df_pyramid_sp$Trophic_Interval,
                                           levels = c("2.0-2.9", "3.0-3.4", "3.5-3.9",  "4.0-4.4", "4.5-4.9"))
 str(df_pyramid_sp)
 
-# Plot the mirrored pyramid
+#Plot the mirrored pyramid of richness
 gg_pyramid_sp <- ggplot(df_pyramid_sp, aes(x = TIP_mean, y = Trophic_Interval, fill = Trophic_Interval)) +
   geom_col(width = 0.8, color = "black") +  # Creates bars for both sides
   geom_errorbar(aes(xmin = TIP_mean - TIP_se / 2, xmax = TIP_mean + TIP_se / 2), 
@@ -200,14 +201,12 @@ gg_pyramid_sr_perc <- plot_grid(gg_pyramid_sp, gg_lme_tips, gg_lme_tips_perc,
 
 gg_pyramid_sr_perc
 
-
 ggsave("../Scale_Dependence_Structural_Stability_LMEs/Figures/Figure 2 - TIPs Pyradmid - LME Richness TIPs.jpeg", plot = gg_pyramid_sr_perc, dpi = 300, width = 12, height = 4)
-
 
 
 ##### Species Turnover (Bray Curtis Similarity LMEs) #####
 s_df <- df_lme_sp %>%
-  select(Species, LME) %>%
+  dplyr::select(Species, LME) %>%
   filter(! (LME == "Indonesian Sea" | LME == "South China Sea")) %>%
   mutate(
     Species  = trimws(Species),
@@ -218,32 +217,35 @@ s_df <- df_lme_sp %>%
   pivot_wider(
     names_from  = LME,
     values_from = presence,
-    values_fill = list(presence = 0), # <- named list fixes your error
-    values_fn   = list(presence = max) # in case of duplicates per Species–LME
+    values_fill = list(presence = 0), 
+    values_fn   = list(presence = max) 
   )
 
-##Reformat matrix so is site by species
+#Reformat matrix so is le site by species
 s_matrix <- t(s_df)
 s_matrix <- as.data.frame(s_matrix)
 s_matrix <- row_to_names(s_matrix, row_number = 1)
-##make sure values are all numeric
+
+#Ensure values are all numeric
 s_matrix[] <- lapply(s_matrix, function(x) as.numeric(as.character(x)))
 str(s_matrix)
 
-##Calculate B-C disimilarity
+#Calculate B-C Dissimilarity
 bc_spatial <- vegdist(s_matrix, method = "bray")
 bc_spatial_matrix <- as.matrix(bc_spatial)
-##transform to % similarity
+
+#transform to Similarity
 bc_spatial_similarity <- (1 - bc_spatial_matrix)*100
 
-##Calculate # of LMEs in each 10% BC similarity
-##Reorganize matrix
+#Calculate # of LMEs in each 10% BC similarity
+
+#Reorganize matrix
 bc_spatial_similarity1<- as.dist(bc_spatial_similarity)
 bc_spatial_similarity_list <- dist2list(bc_spatial_similarity1)%>%
   unite(Pair, col, row) %>%
   rename(bc_sim = "value")
 
-##filter out only 1 of each pair and remove same site pairs
+#Filter out only 1 of each pair and remove same site pairs
 bc_spatial_similarity_df <- bc_spatial_similarity_list %>%
   separate(Pair, into = c("Site1", "Site2"), sep = "_") %>%
   mutate(
@@ -253,9 +255,9 @@ bc_spatial_similarity_df <- bc_spatial_similarity_list %>%
   filter(Site1 != Site2) %>%
   mutate(Pair = paste(Site1, Site2, sep = "_")) %>%
   distinct(Pair, .keep_all = TRUE) %>%
-  select(Pair, bc_sim) 
+  dplyr::select(Pair, bc_sim) 
 
-##Add column for each 10% bin category
+#Add column for each 10% bin category
 bc_spatial_similarity_df <- bc_spatial_similarity_df %>%
   mutate(category = case_when(
     bc_sim >=79 ~ 79,
@@ -271,7 +273,7 @@ bc_spatial_similarity_df <- bc_spatial_similarity_df %>%
     bc_sim >= 0.0 ~ 0,
   ))
 
-##Number of lmes per category
+#Number of lmes per category for supp table
 bc_summary <- bc_spatial_similarity_df %>%
   group_by(category) %>%
   count()

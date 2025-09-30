@@ -1,4 +1,4 @@
-# Dirichlet Models
+# Temporal Dirichlet Regression Models
 
 # Author(s): Reilly O'Connor
 # Version: 2025-08-08
@@ -17,7 +17,7 @@ library(forecast)
 library(caret)
 
 # load data
-df_sp_tips <- read.csv("../Scale_Dependence_Structural_Stability_LMEs/Data/Output Data/richness_tips_split_chao.csv", header = T) %>%
+df_sp_tips <- read.csv("../Scale_Dependence_Structural_Stability_LMEs/Data/Output Data/richness_tips_jack2.csv", header = T) %>%
   filter(year < 2004)
 
 df_gf_biomass <- read.csv("../Scale_Dependence_Structural_Stability_LMEs/Data/Output Data/groundfish sum biomass.csv", header = T) %>%
@@ -113,7 +113,7 @@ acf(loess_neus$residuals)
 plot(df_neus_harv$lag_landings)
 plot(df_neus_harv$landings_trend)
 plot(df_neus_harv$landings_anom)
-plot(df_neus_harv$landings_detrend)
+
 df_temp_harvest_trend_anom <- rbind(df_nfls_harv, df_ss_harv, df_neus_harv)
 
 df_temp_harvest_trend_anom_diff <- df_temp_harvest_trend_anom %>%
@@ -245,7 +245,7 @@ gg_tips
 
 # ggsave("../Scale_Dependence_Structural_Stability_LMEs/Figures/Figure 3 - Temporal TIPs.jpeg", plot = gg_tips, dpi = 300, width = 10, height = 4)
 
-#Community NMDS & Dissimilarity Plots
+#Load Community NMDS & Dissimilarity Plots
 source("../Scale_Dependence_Structural_Stability_LMEs/src/4 - Temporal Community Dissimilarity NMDS.R")
 
 gg_tips_bc <- plot_grid(gg_tips, gg_bc_all, nrow = 2, align = "hv")
@@ -283,7 +283,7 @@ set.seed(444)
 #Set SS (Middle Region) as baseline
 df_sp_tis_covar$Region <- relevel(df_sp_tis_covar$Region, ref = "SS")
 
-#Take a look at dispersion and means
+#Look at dispersion and means if interested on triangle boi
 df_sp_tis_covar_reg <- df_sp_tis_covar %>%
   filter(Region == "NFLS")
 
@@ -293,7 +293,8 @@ plot(DR_data(df_sp_tis_covar_reg[, c("3.0-3.4", "3.5-3.9", "4.0-4.4")]))
 df_sp_tis_covar$Y <- DR_data(df_sp_tis_covar[, c("4.5-4.9", "4.0-4.4", "3.5-3.9", "3.0-3.4")])
 
 ##### Model selection starting with full mean model and precision models #####
-# Required: rerun var_subsets so they're fresh list elements
+#Variables to include in models, there various ways in which landings could be used...
+#Main paper has used the loess() trend anomaly decomposition
 vars <- c("scale_year", 
           # "scale_landings",
           "scale_landings_trend",
@@ -302,10 +303,12 @@ vars <- c("scale_year",
           # "scale_landings_detrend",
           "scale_nao")
 
+#Crate subsets
 get_var_subsets <- function(vars) {
   unlist(lapply(0:length(vars), function(i) combn(vars, i, simplify = FALSE)), recursive = FALSE)
 }
 
+#Function to help make all potential equations (essentially a manual dredge())
 make_hybrid_rhs <- function(var_subset, allow_region = TRUE) {
   if (length(var_subset) == 0) {
     return(if (allow_region) c("1", "Region") else "1")
@@ -324,17 +327,17 @@ make_hybrid_rhs <- function(var_subset, allow_region = TRUE) {
   out <- sapply(splits, function(sp) {
     parts <- c()
     
-    # main effects
+    #main effects
     if (length(sp$main_vars) > 0) {
       parts <- c(parts, paste(sp$main_vars, collapse = " + "))
     }
     
-    # interaction effects
+    #interaction effects
     if (length(sp$interact_vars) > 0) {
       parts <- c(parts, paste0("(", paste(sp$interact_vars, collapse = " + "), ")*Region"))
     }
     
-    # add Region only if allow_region = TRUE AND not already implied
+    #add Region only if allow_region = TRUE AND not already implied
     if (allow_region) {
       already_in <- any(grepl("\\*Region", parts))
       if (!already_in) parts <- c(parts, "Region")
@@ -343,15 +346,19 @@ make_hybrid_rhs <- function(var_subset, allow_region = TRUE) {
     paste(parts, collapse = " + ")
   }, simplify = TRUE)
   
-  # deduplicate across splits
+  #Check for dupilicates
   unique(out)
 }
 
+#Grab subsets
 var_subsets <- get_var_subsets(vars)
+
+#Create all combos
 rhs_combos <- expand.grid(mean_idx = seq_along(var_subsets),
                           precision_idx = seq_along(var_subsets),
                           stringsAsFactors = FALSE)
 
+#Put together all formulas
 all_formulas <- do.call(c, mapply(function(m_idx, p_idx) {
   mean_vars <- var_subsets[[m_idx]]
   precision_vars <- var_subsets[[p_idx]]
@@ -365,13 +372,13 @@ all_formulas <- do.call(c, mapply(function(m_idx, p_idx) {
 }, rhs_combos$mean_idx, rhs_combos$precision_idx,
 SIMPLIFY = FALSE))
 
-# unique_formulas <- unique(all_formulas)
+#Ensure only unique amigos
 unique_formulas <- all_formulas[!duplicated(sapply(all_formulas, deparse))]
 
-# Detect number of cores
-num_cores <- detectCores() - 1  # leave one core free
+#Number of cores for paralleling
+num_cores <- detectCores() - 1  #leave a core free
 
-# Parallel model fitting
+#Fit all potential models in parallel
 models_interaction <- mclapply(unique_formulas, function(f) {
   # print(f)
   eval(bquote(DirichReg(.(f), data = df_sp_tis_covar, 
@@ -382,9 +389,10 @@ models_interaction <- mclapply(unique_formulas, function(f) {
 #Save models
 # saveRDS(models_interaction, file = "../Scale_Dependence_Structural_Stability_LMEs/Data/Output Data/dirichlet_models.rds", compress = "xz")
 
-# Load models
+#Load models
 # models_interaction <- readRDS("../Scale_Dependence_Structural_Stability_LMEs/Data/Output Data/dirichlet_models.rds")
 
+#Calculate AIC, AICc for all models
 df_model_selection <- data.frame(
   Model_ID = seq_along(models_interaction),
   AIC = sapply(models_interaction, AIC),
@@ -392,16 +400,19 @@ df_model_selection <- data.frame(
 )
 
 
+#Compare AICc and calculate Akaike Weights based on AICc
 df_model_selection_fin <- df_model_selection %>%
   mutate(AIC_diff = min(AIC) - AIC,
          AICc_diff = min(AICc) - AICc) %>%
-  filter(AICc_diff >= -6) %>%
+  filter(AICc_diff >= -6) %>% #can leave this out to calculate across all models...
+  # filter(AICc_diff >= -10) %>% #if interested
   mutate(
     AICc_delta = AICc - min(AICc),
     Weight = exp(-0.5 * AICc_delta) / sum(exp(-0.5 * AICc_delta)),
     perc_weight = Weight*100)
 
 ###### Subset Top Candidate Models based on AICc #####
+#grab top four mods
 df_model_selection_fin %>%
   filter(AICc_diff >= -2.6) %>%
   arrange(AICc)
@@ -410,13 +421,10 @@ df_model_selection_fin %>%
 models_interaction[[2134]]$call
 summary(models_interaction[[1478]])
 
-
 ##### Plot Top Model #####
 mod_final <- models_interaction[[2134]]
 summary.DirichletRegModel(mod_final)
 confint.DirichletRegModel(mod_final, level = 0.85)
-
-summ_mod3_all <- summary.DirichletRegModel(mod_final)
 
 mod_final_resid <- residuals(mod_final, type = "standardized")
 df_mod_final_resid <- as.data.frame(mod_final_resid)
@@ -539,10 +547,6 @@ gg_tips_mod_means
 
 ##### Precision Model Mean Differences - Top Model #####
 
-
-
-
-
 #Estimate Precision
 precision_lp <- rnd[, grep("gamma", colnames(rnd))] %*% t(dp)
 phi_sim <- exp(precision_lp)
@@ -630,6 +634,7 @@ means <- unlist(coef(models_interaction[[2134]]))
 vc <- vcov(models_interaction[[2134]])
 N <- 10000
 rnd <- rmvnorm(N, mean = means, sigma = vc)
+
 #Design matrix (precision model)
 dp <- models_interaction[[2134]]$Z    
 
@@ -641,6 +646,7 @@ means <- unlist(coef(models_interaction[[330]]))
 vc <- vcov(models_interaction[[330]])
 N <- 10000
 rnd <- rmvnorm(N, mean = means, sigma = vc)
+
 dp <- models_interaction[[330]]$Z
 
 #Generate Precision Predictor
@@ -651,6 +657,7 @@ means <- unlist(coef(models_interaction[[166]]))
 vc <- vcov(models_interaction[[166]])
 N <- 10000
 rnd <- rmvnorm(N, mean = means, sigma = vc)
+
 dp <- models_interaction[[166]]$Z
 
 #Generate Precision Predictor
@@ -661,6 +668,7 @@ means <- unlist(coef(models_interaction[[1478]]))
 vc <- vcov(models_interaction[[1478]])
 N <- 10000
 rnd <- rmvnorm(N, mean = means, sigma = vc)
+
 dp <- models_interaction[[1478]]$Z
 
 #Generate Precision Predictor
@@ -672,6 +680,7 @@ phi_2 <- exp(precision_lp_2)
 phi_3 <- exp(precision_lp_3)
 phi_4 <- exp(precision_lp_4)
 
+#Akaike weights from earlier
 weights <- c(0.18, 0.16, 0.09, 0.05)
 weights <- weights / sum(weights)
 

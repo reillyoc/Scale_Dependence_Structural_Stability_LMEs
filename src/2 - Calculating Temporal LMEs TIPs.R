@@ -1,4 +1,4 @@
-# Structural Stability in Large Marine Ecosystems
+# Species Accumulation Curves, Species Richness Estimators, Calculating Trophic Interval Proportions
 
 # Author(s): Reilly O'Connor
 # Version: 2025-05-07
@@ -12,7 +12,7 @@ library(cowplot)
 library(beepr)
 library(easystats)
 
-source("../Scale_Dependence_Structural_Stability_LMEs/src/Functions.R")
+source("../Scale_Dependence_Structural_Stability_LMEs/src/0 - Functions.R")
 
 # load data
 df_nfls <- read.csv("../Scale_Dependence_Structural_Stability_LMEs/Data/Trawl Data/NFLS_NoPelagics_NW_Atlantic_trawlsurveydata_NFLS.csv", header = T)
@@ -25,28 +25,28 @@ df_neus <- read.csv("../Scale_Dependence_Structural_Stability_LMEs/Data/Trawl Da
 ##### Species Accumulation Curves by Year #####
 #NFLS
 df_sp_accum_by_year_nfls <- df_nfls %>%
-  filter(lat <= 55.2) %>% # filter out sites North of 2J
-  filter(long <= -46.2) %>% # filter out sites East of 3L
+  filter(lat <= 55.2) %>% #filter out sites North of 2J
+  filter(long <= -46.2) %>% #filter out sites East of 3L
   # mutate(keep = ifelse(lat < 48 & long < -54.5, FALSE, TRUE)) %>%
   # filter(keep == "TRUE") %>%
   # filter(lat >= 46.00) %>%
   dplyr::select(towid, year, spcode, nopertow) %>%
   filter(year >= 1973) %>%
   group_by(towid, year, spcode) %>%
-  reframe(pres = as.integer(mean(nopertow) > 0)) %>%  # <-- Convert to presence/absence
+  reframe(pres = as.integer(mean(nopertow) > 0)) %>% 
   ungroup() %>%
   group_by(year) %>%
   nest() %>%
   mutate(
-    # pivot each year’s data to wide (sites × species), filling NAs with 0
+    #Pivot each year to wide (sites × species). NAs are 0s
     sp_mat = map(data, ~ 
                    pivot_wider(.x, names_from = spcode, values_from = pres, values_fill = 0) %>% 
                    dplyr::select(-towid)
     ),
-    # run the random accumulation curve on presence/absence matrix
+    #Run the random accumulation curve on presence/absence matrix
     sac = map(sp_mat, ~ specaccum(.x, method = "random")),
     
-    # pull out the sites, mean richness and sd into a tibble
+    #pull out the sites, mean richness and sd
     sac_df = map(sac, ~ tibble(
       sites    = .$sites,
       richness = .$richness,
@@ -206,41 +206,6 @@ df_neus_sp <- df_sp_accum_by_year_neus %>%
   rename(total_sr = richness) %>%
   dplyr::select(-sd)
 
-ggplot() +
-  geom_vline(xintercept = 1990, linetype = "dashed", alpha = 0.5) +
-  geom_vline(xintercept = 1995, linetype = "dashed", alpha = 0.5) +
-  xlim(1977, 2003) +
-  geom_point(data = df_nfls_sp, aes(x = year, y = scale(total_sr))) +
-  geom_line(data = df_nfls_sp, aes(x = year, y = scale(total_sr)), color = "navy") +
-  geom_point(data = df_nfls_sp, aes(x = year, y = scale(sites))) +
-  geom_line(data = df_nfls_sp, aes(x = year, y = scale(sites)), color = "orange2") +
-  labs(x = "Year",
-       y = "Total Species Richness") +
-  #xlim(1981, 2004) +
-  theme_classic()
-
-
-ggplot() +
-  geom_vline(xintercept = 1995, linetype = "dashed", alpha = 0.5) +
-  geom_point(data = df_ss_sp, aes(x = year, y = scale(total_sr))) +
-  geom_line(data = df_ss_sp, aes(x = year, y = scale(total_sr)), color = "navy") +
-  geom_point(data = df_ss_sp, aes(x = year, y = scale(sites))) +
-  geom_line(data = df_ss_sp, aes(x = year, y = scale(sites)), color = "orange2") +
-  labs(x = "Year",
-       y = "Total Species Richness") +
-  theme_classic()
-
-
-ggplot() +
-  geom_vline(xintercept = 1995, linetype = "dashed", alpha = 0.5) +
-  geom_point(data = df_neus_sp, aes(x = year, y = scale(total_sr))) +
-  geom_line(data = df_neus_sp, aes(x = year, y = scale(total_sr)), color = "navy") +
-  geom_point(data = df_neus_sp, aes(x = year, y = scale(sites))) +
-  geom_line(data = df_neus_sp, aes(x = year, y = scale(sites)), color = "orange2") +
-  labs(x = "Year",
-       y = "Total Species Richness") +
-  theme_classic()
-
 df_nfls_sp$Region <- "NFLS"
 df_ss_sp$Region <- "SS"
 df_neus_sp$Region <- "NEUS"
@@ -258,8 +223,8 @@ ggsave("../Scale_Dependence_Structural_Stability_LMEs/Figures/Figure S4 - NEUS S
 ##### Quantifying Species Richness by Trophic Interval & TIPs #####
 #NFLS
 df_nfls_pa <- df_nfls  %>%
-  # filter(lat <= 55.2) %>% # filter out sites North of 2J 
-  # filter(long <= -46.2) %>% # filter out sites East of 3L
+  # filter(lat <= 55.2) %>% #filter out sites North of 2J 
+  # filter(long <= -46.2) %>% #filter out sites East of 3L
   # mutate(keep = ifelse(lat < 48 & long < -54.5, FALSE, TRUE)) %>%
   # filter(keep == "TRUE") %>%
   #filter(lat >= 46.00) %>%
@@ -311,7 +276,7 @@ for (ti in trophic) {
     
     if (nrow(df_nfls_pa_sub) < 2 || ncol(df_nfls_pa_sub) == 0) next  # skip empty
     
-    # --- Chao2 estimates ---
+    #SR Estimates
     temp_chao2 <- specpool(df_nfls_pa_sub) %>%
       as_tibble() %>%
       mutate(year = time,
@@ -361,7 +326,7 @@ ggplot(df_nfls_sp_tips, aes(x = year, y = Species, color = Trophic_interval)) +
   #xlim(1981, 2004) +
   theme_classic()
 
-ggplot(df_nfls_sp_tips, aes(x = year, y = tips_chao, color = Trophic_interval)) +
+ggplot(df_nfls_sp_tips, aes(x = year, y = tips_jack2, color = Trophic_interval)) +
   geom_point() +
   geom_line() +
   scale_color_manual(values = c("#4245c4", "#f78c2f",  "#649f4d", "#b61790")) +
@@ -420,7 +385,7 @@ for (ti in trophic) {
     
     if (nrow(df_ss_pa_sub) < 2 || ncol(df_ss_pa_sub) == 0) next  # skip empty
     
-    # --- Chao2 estimates ---
+    #SR Estimates
     temp_chao2 <- specpool(df_ss_pa_sub) %>%
       as_tibble() %>%
       mutate(year = time,
@@ -448,14 +413,14 @@ df_ss_sp_tips <- df_ss_chao2_ti %>%
   ) %>%
   ungroup()
 
-ggplot(df_ss_sp_tips, aes(x = year, y = total_sr)) +
+ggplot(df_ss_sp_tips, aes(x = year, y = total_sr_jack2)) +
   geom_point() +
   geom_line() +
   labs(x = "Year",
        y = "Total Species Richness") +
   theme_classic()
 
-ggplot(df_ss_sp_tips, aes(x = year, y = Species, color = Trophic_interval)) +
+ggplot(df_ss_sp_tips, aes(x = year, y = jack2, color = Trophic_interval)) +
   geom_point() +
   geom_line() +
   scale_color_manual(values = c("#4245c4", "#f78c2f",  "#649f4d", "#b61790")) +
@@ -463,7 +428,7 @@ ggplot(df_ss_sp_tips, aes(x = year, y = Species, color = Trophic_interval)) +
        y = "Species Richness") +
   theme_classic()
 
-ggplot(df_ss_sp_tips, aes(x = year, y = tips_chao, color = Trophic_interval)) +
+ggplot(df_ss_sp_tips, aes(x = year, y = tips_jack2, color = Trophic_interval)) +
   geom_point() +
   geom_line() +
   scale_color_manual(values = c("#4245c4", "#f78c2f",  "#649f4d", "#b61790")) +
@@ -530,7 +495,7 @@ for (ti in trophic) {
     
     if (nrow(df_neus_pa_sub) < 2 || ncol(df_neus_pa_sub) == 0) next  # skip empty
     
-    # --- Chao2 estimates ---
+    #SR Estimates
     temp_chao2 <- specpool(df_neus_pa_sub) %>%
       as_tibble() %>%
       mutate(year = time,
@@ -559,7 +524,7 @@ df_neus_sp_tips <- df_neus_chao2_ti %>%
   ungroup()
 
 
-ggplot(df_neus_sp_tips, aes(x = year, y = total_sr)) +
+ggplot(df_neus_sp_tips, aes(x = year, y = total_sr_jack2)) +
   geom_point() +
   geom_line() +  
   labs(x = "Year",
@@ -583,7 +548,6 @@ ggplot(df_neus_sp_tips, aes(x = year, y = tips, color = Trophic_interval)) +
   labs(x = "Year",
        y = "Trophic Interval Proportions") +
   theme_classic()
-
 
 
 df_nfls_sp_tips$Region <- "NFLS"
@@ -632,15 +596,15 @@ gg_tips_acf <- ggplot(acf_df, aes(x = as.factor(lag), y = acf)) +
 
 gg_tips_acf
 
-ggsave("../Scale_Dependence_Structural_Stability_LMEs/Figures/Figure SX - TIPs ACF.jpeg", plot = gg_tips_acf, dpi = 300, width = 10, height = 9)
+# ggsave("../Scale_Dependence_Structural_Stability_LMEs/Figures/Figure SX - TIPs ACF.jpeg", plot = gg_tips_acf, dpi = 300, width = 10, height = 9)
 
-write.csv(df_sp_tips, "../Scale_Dependence_Structural_Stability_LMEs/Data/Output Data/richness_tips_split_chao.csv")
+# write.csv(df_sp_tips, "../Scale_Dependence_Structural_Stability_LMEs/Data/Output Data/richness_tips_jack2.csv")
 
 #Look at observed TIPs
 
 df_sp_tips$Region <- factor(df_sp_tips$Region, levels=c('NFLS', 'SS', 'NEUS'))
 
-gg_tips <- ggplot(df_sp_tips, aes(x = year, y = tips, color = Trophic_interval)) +
+gg_tips <- ggplot(df_sp_tips, aes(x = year, y = tips_jack2, color = Trophic_interval)) +
   # geom_vline(xintercept = 1990, linetype = "dashed", alpha = 0.5) +
   # geom_vline(data = df_sp_tips %>% filter(Region == "NFLS" & year == 1995),
   # aes(xintercept = year),

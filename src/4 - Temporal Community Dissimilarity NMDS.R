@@ -292,5 +292,5 @@ gg_bc_all <-  ggplot(data = df_bc_all, aes(x = Year, y = BC_simm, color = Region
 
 gg_bc_all
 
-ggsave("../Scale_Dependence_Structural_Stability_LMEs/Figures/Figure SX - Bray-Curtis Similarities.jpeg", plot = gg_bc_all, width = 10, height = 3, dpi = 300)
+# ggsave("../Scale_Dependence_Structural_Stability_LMEs/Figures/Figure SX - Bray-Curtis Similarities.jpeg", plot = gg_bc_all, width = 10, height = 3, dpi = 300)
 

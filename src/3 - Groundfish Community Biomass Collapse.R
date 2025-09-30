@@ -1,4 +1,4 @@
-# NMDS on Annual Species Assemblages from 1981 onwards...
+# Visualize groundfish community biomass time series
 
 # Author(s): Reilly O'Connor
 # Version: 2025-06-25
@@ -13,7 +13,7 @@ library(ggrepel)
 library(beepr)
 library(easystats)
 
-source("../Scale_Dependence_Structural_Stability_LMEs/src/Functions.R")
+source("../Scale_Dependence_Structural_Stability_LMEs/src/0 - Functions.R")
 
 # load data
 df_nfls <- read.csv("../Scale_Dependence_Structural_Stability_LMEs/Data/Trawl Data/NFLS_NoPelagics_NW_Atlantic_trawlsurveydata_NFLS.csv", header = T)
@@ -24,8 +24,8 @@ df_neus <- read.csv("../Scale_Dependence_Structural_Stability_LMEs/Data/Trawl Da
 
 ##### NFLS Groundfish Community Biomass #####
 df_nfls_sub <-  df_nfls %>%
-  filter(lat <= 55.2) %>% # filter out sites North of 2J
-  filter(long <= -46.2) %>% # filter out sites East of 3L
+  filter(lat <= 55.2) %>% #filter out sites North of 2J
+  filter(long <= -46.2) %>% #filter out sites East of 3L
   # mutate(keep = ifelse(lat < 48 & long < -54.5, FALSE, TRUE)) %>%
   # filter(keep == "TRUE") %>%
   # filter(lat >= 46.00) %>%g
@@ -204,7 +204,7 @@ gg_dens <- ggplot(data = df_sum_gf, aes(x = Year, y = log10(sum_geom_dens), colo
 
 gg_dens
 
-ggsave("../Scale_Dependence_Structural_Stability_LMEs/Figures/Figure SX - Geometric Sum Mean Biomass Densities.jpeg", plot = gg_dens, width = 10, height = 3, dpi = 300)
+# ggsave("../Scale_Dependence_Structural_Stability_LMEs/Figures/Figure SX - Geometric Sum Mean Biomass Densities.jpeg", plot = gg_dens, width = 10, height = 3, dpi = 300)
 
-write.csv(df_sum_gf, "../Scale_Dependence_Structural_Stability_LMEs/Data/Output Data/groundfish sum biomass.csv")
+# write.csv(df_sum_gf, "../Scale_Dependence_Structural_Stability_LMEs/Data/Output Data/groundfish sum biomass.csv")
 
