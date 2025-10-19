@@ -15,6 +15,8 @@ library(bbmle)
 library(DirichletReg)
 library(forecast)
 library(caret)
+library(parallel)
+library(mvtnorm)
 
 # load data
 df_sp_tips <- read.csv("../Scale_Dependence_Structural_Stability_LMEs/Data/Output Data/richness_tips_jack2.csv", header = T) %>%
@@ -285,7 +287,7 @@ df_sp_tis_covar$Region <- relevel(df_sp_tis_covar$Region, ref = "SS")
 
 #Look at dispersion and means if interested on triangle boi
 df_sp_tis_covar_reg <- df_sp_tis_covar %>%
-  filter(Region == "NFLS")
+  filter(Region == "NEUS")
 
 plot(DR_data(df_sp_tis_covar_reg[, c("3.0-3.4", "3.5-3.9", "4.0-4.4")]))
 
@@ -549,7 +551,8 @@ gg_tips_mod_means
 
 #Estimate Precision
 precision_lp <- rnd[, grep("gamma", colnames(rnd))] %*% t(dp)
-phi_sim <- exp(precision_lp)
+phi_sim <- 1/exp(precision_lp)
+phi_sim <- exp(-precision_lp)
 
 #Compute Confidence Intervals
 phi_ci <- apply(phi_sim, 2, function(x) {
@@ -600,10 +603,10 @@ df_precision_coefs <- data.frame(parameter = c("Commercial Harvest Trend", "NAO"
 
 df_precision_coefs$parameter <- factor(df_precision_coefs$parameter, levels=c('NAO', 'Commercial Harvest Trend'))
 
-gg_precis_coefs <- ggplot(df_precision_coefs, aes(y = parameter, x = estimate)) +
+gg_precis_coefs <- ggplot(df_precision_coefs, aes(y = parameter, x = estimate*-1)) +
   geom_vline(xintercept = 0, linetype = "dashed", alpha = 0.4) +
-  geom_errorbarh(aes(xmin = lower_89, xmax = upper_89), height = 0, linewidth = 1, color = "black") +
-  geom_errorbarh(aes(xmin = lower_85, xmax = upper_85), height = 0, linewidth = 4, color = 'black') +
+  geom_errorbarh(aes(xmin = lower_89*-1, xmax = upper_89*-1), height = 0, linewidth = 1, color = "black") +
+  geom_errorbarh(aes(xmin = lower_85*-1, xmax = upper_85*-1), height = 0, linewidth = 4, color = 'black') +
   geom_point(size = 5, shape = 21, stroke = 0.5, color = "black", fill = "aliceblue") +
   xlim(-0.5, 0.5) +
   theme_bw(base_size = 16) +
@@ -675,10 +678,10 @@ dp <- models_interaction[[1478]]$Z
 precision_lp_4 <- rnd[, grep("gamma", colnames(rnd))] %*% t(dp)
 
 #Collect Precision Estimates
-phi_1 <- exp(precision_lp_1)
-phi_2 <- exp(precision_lp_2)
-phi_3 <- exp(precision_lp_3)
-phi_4 <- exp(precision_lp_4)
+phi_1 <- 1/exp(precision_lp_1)
+phi_2 <- 1/exp(precision_lp_2)
+phi_3 <- 1/exp(precision_lp_3)
+phi_4 <- 1/exp(precision_lp_4)
 
 #Akaike weights from earlier
 weights <- c(0.18, 0.16, 0.09, 0.05)
@@ -693,7 +696,7 @@ phi_weighted <- do.call(rbind, lapply(seq_along(phi_all), function(i) {
 }))
 
 phi_ci <- apply(phi_weighted, 2, function(x) {
-  c(mean = mean(x), lower = quantile(x, 0.055), upper = quantile(x, 0.955))
+  c(mean = mean(x), lower = quantile(x, 0.055), upper = quantile(x, 0.945))
 })
 
 phi_df <- as.data.frame(t(phi_ci))
@@ -701,18 +704,18 @@ df_precision_reg <- cbind(df_sp_tis_covar[, c("year", "Region")], phi_df)
 
 df_precision_reg <- df_precision_reg %>%
   rename(lower = `lower.5.5%`,
-         upper = `upper.95.5%`)
+         upper = `upper.94.5%`)
 
 ##### Figure 5 #####
 #Regional Grounfish Biomass Collapses
 df_gfb_windows <- tribble(
   ~Region, ~xintercept,
   "NFLS",  1990,
-  "NFLS",  1994,
+  # "NFLS",  1994,
   "SS",    1992,
-  "SS",    1998,
+  # "SS",    1998,
   "NEUS",  1981,
-  "NEUS",  1991,
+  # "NEUS",  1991,
 )
 
 df_mod_tips$Region <- factor(df_mod_tips$Region, levels=c('NFLS', 'SS', 'NEUS'))
@@ -751,7 +754,7 @@ gg_pred_precis <- ggplot(df_precision_reg, aes(x = year, y = mean, color = Regio
                      # expand = expansion(mult = c(0.25, 0.25))
                      ) +
   labs(color = "Region",
-       y = expression(phi),
+       y = expression(1/phi),
        x = "Year") +
   theme(legend.position = "none")
 
@@ -759,7 +762,69 @@ gg_pred_precis
 
 # ggsave("../Scale_Dependence_Structural_Stability_LMEs/Figures/Figure 5 - Model Estimates - Precision.jpeg", plot = gg_pred_precis, width = 10, height = 4, dpi = 300)
 
-# ggsave("../Scale_Dependence_Structural_Stability_LMEs/Figures/Figure 5 - Model Estimates - Precision - Stack.jpeg", plot = gg_pred_precis, width = 4, height = 9, dpi = 300)
-
 # ggsave("../Scale_Dependence_Structural_Stability_LMEs/Figures/Figure SX - Model Estimates - Mean.jpeg", plot = gg_pred_mean_tips, width = 10, height = 10, dpi = 300)
+
+
+df_nfls_cod <- read.csv("../Scale_Dependence_Structural_Stability_LMEs/Data/Cod Long-Term Harvesting Data/NCod_Catch.csv")
+unique(df_nfls_cod$Stock)
+
+
+gg_nfls_cod_all <- ggplot(df_nfls_cod, aes(x = yr, y = ct*1e-05)) +
+  geom_line(linewidth = 1.5, alpha = 0.8) +
+  theme_bw(base_size = 16) +
+  scale_x_continuous(# limits = c(1970, 2005), 
+                     breaks = scales::pretty_breaks()) +
+  scale_y_continuous(limits = c(0, 10),
+                     breaks = scales::pretty_breaks(), 
+                     expand = expansion(mult = c(0.10, 0.10))) +
+  labs(color = "Region",
+       y = "Catch",
+       x = "Year") +
+  theme(legend.position = "none")
+
+gg_nfls_cod_all
+
+ggsave("../Scale_Dependence_Structural_Stability_LMEs/Figures/Figure 5 - NFLS Cod Biomass - all.jpeg", plot = gg_nfls_cod_all, width = 5, height = 5, dpi = 300)
+
+gg_nfls_cod_1960 <- ggplot(df_nfls_cod %>% filter(yr > 1935 & yr < 2004), aes(x = yr, y = ct*1e-05)) +
+  geom_line(linewidth = 2.0, alpha = 0.8) +
+  theme_bw(base_size = 16) +
+  scale_x_continuous(limits = c(1935, 2005), 
+                     breaks = scales::pretty_breaks()) +
+  scale_y_continuous(limits = c(0, 10),
+                     breaks = scales::pretty_breaks(), expand = expansion(mult = c(0.1, 0.1))) +
+  labs(color = "Region",
+       y = "Catch",
+       x = "Year") +
+  theme(legend.position = "none")
+
+gg_nfls_cod_1960
+
+ggsave("../Scale_Dependence_Structural_Stability_LMEs/Figures/Figure 5 - NFLS Cod Biomass - 1960.jpeg", plot = gg_nfls_cod_all, width = 5, height = 5, dpi = 300)
+
+gg_nfls_cod_1990 <- ggplot(df_nfls_cod %>% filter(yr > 1973 & yr < 2004), aes(x = yr, y = ct*1e-05)) +
+  geom_line(linewidth = 2.0, alpha = 0.8) +
+  theme_bw(base_size = 16) +
+  scale_x_continuous(limits = c(1970, 2005), 
+    breaks = scales::pretty_breaks()) +
+  scale_y_continuous(limits = c(0, 4),
+                     breaks = scales::pretty_breaks(), expand = expansion(mult = c(0.1, 0.1))) +
+  labs(color = "Region",
+       y = "Catch",
+       x = "Year") +
+  theme(legend.position = "none")
+
+gg_nfls_cod_1990
+
+ggsave("../Scale_Dependence_Structural_Stability_LMEs/Figures/Figure 5 - NFLS Cod Biomass - 1990.jpeg", plot = gg_nfls_cod_1990, width = 5, height = 5, dpi = 300)
+
+gg_nfls_cod <- plot_grid(gg_nfls_cod_all, gg_nfls_cod_1960, gg_nfls_cod_1990, nrow = 1, align = "hv")
+gg_nfls_cod
+
+ggsave("../Scale_Dependence_Structural_Stability_LMEs/Figures/Figure 5 - NFLS Cod Biomass Grid.jpeg", plot = gg_nfls_cod, width = 10, height = 4, dpi = 300)
+
+
+
+
+
 
