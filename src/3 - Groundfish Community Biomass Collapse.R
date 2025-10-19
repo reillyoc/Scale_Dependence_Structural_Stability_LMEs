@@ -177,11 +177,11 @@ df_sum_gf <- rbind(df_nfls_sum, df_ss_sum, df_neus_sum)
 df_gfb_windows <- tribble(
   ~Region, ~xintercept,
   "NFLS",  1990,
-  "NFLS",  1994,
+  # "NFLS",  1994,
   "SS",    1992,
-  "SS",    1998,
-  "NEUS",  1981,
-  "NEUS",  1991,
+  # "SS",    1998,
+  # "NEUS",  1981,
+  "NEUS",  1990,
   # "NEUS",  1990,
   # "NEUS",  1993
 )
