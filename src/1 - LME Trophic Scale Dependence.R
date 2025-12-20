@@ -51,6 +51,7 @@ unique(df_lme$LME)
 
 df_lme_dir <- df_lme %>%
   dplyr::select(-sr) %>%
+  # filter(! Trophic_Interval == "2.0-2.9") %>%
   pivot_wider(values_from = tips, names_from = Trophic_Interval, values_fill = 0) %>%
   mutate(scale_sr = scale(total_sr)[,1])
 
