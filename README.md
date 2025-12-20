@@ -1,4 +1,4 @@
-# Structural Early Warning Signals of Collapse in Harvested Large Marine Ecosystems
+# Structural Early Warning Signals in Harvested Large Marine Ecosystems
 
 This repository contains R scripts to reproduce empirical analyses and figures related to the manuscript "Structural Early Warning Signals of Collapse in Harvested Large Marine Ecosystems".
 
