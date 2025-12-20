@@ -5,7 +5,7 @@ This repository contains R scripts to reproduce empirical analyses and figures r
 # R (v 4.5.1)
 See the R folder for relevant analyses used to reproduce figures, analyses, scripts should be run in order.
 
-Independent Scientific Independent Trawl Data for Northwest Atlantic Large Marine Ecosystems provided by K. Frank.
+Independent Scientific Trawl Data for Northwest Atlantic Large Marine Ecosystems provided by K. Frank.
 
 # R Studio Session Info for all packages used throughout R scripts - sessionInfo()
 R version 4.5.1 (2025-06-13)
