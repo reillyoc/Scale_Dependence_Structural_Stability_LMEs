@@ -237,11 +237,12 @@ gg_tips <- ggplot(df_sp_tips_sub, aes(x = year, y = tips, color = Trophic_Interv
   scale_fill_manual(values = c("#4245c4", "#f78c2f",  "#649f4d", "#b61790")) +
   labs(x = "Year",
        y = "Trophic Interval Proportions (TIPs)") +
-  theme_bw(base_size = 14) +
-  scale_y_continuous(breaks = scales::pretty_breaks()) +
+  theme_bw(base_size = 18) +
+  facet_wrap(~ Region, scale = "free", ncol = 1) +
+  scale_y_continuous(limits = c(0, 0.55), breaks = scales::pretty_breaks()) +
   scale_x_continuous(limits = c(1970, 2005), breaks = scales::pretty_breaks()) +
-  facet_wrap(~ Region) +
-  theme(text = element_text(family = "Arial"))
+  theme(text = element_text(family = "Arial"),
+        legend.position = 'none')
 
 gg_tips
 
@@ -267,15 +268,16 @@ gg_sr <- ggplot(df_sp_tips_sub %>% filter(Trophic_Interval == "3.0-3.4"), aes(x 
   scale_x_continuous(limits = c(1970, 2005), breaks = scales::pretty_breaks()) +
   facet_wrap(~ Region, scale = "free_y") +
   scale_color_viridis_d() +
-  theme(text = element_text(family = "Arial"))
+  theme(text = element_text(family = "Arial"),
+        legend.position = 'none')
 
 gg_sr
 
-gg_tips_sr <- plot_grid(gg_tips, gg_sr, nrow = 2, align = "hv")
+gg_tips_sr <- plot_grid(gg_sr, gg_bc_all, nrow = 2, align = "hv")
 
 gg_tips_sr
 
-# ggsave("../Scale_Dependence_Structural_Stability_LMEs/Figures/Figure 3 - Temporal TIPs + SR.jpeg", plot = gg_tips_sr, dpi = 300, width = 10, height = 6)
+ggsave("../Scale_Dependence_Structural_Stability_LMEs/Figures/Figure SX - Temporal SR + BC.jpeg", plot = gg_tips_sr, dpi = 300, width = 10, height = 6)
 
 
 ##### Start Dirichlet Model Selection Process #####
@@ -421,7 +423,7 @@ df_model_selection_fin %>%
 
 ##### Check Candidate Models & Summaries #####
 models_interaction[[2134]]$call
-summary(models_interaction[[1478]])
+summary(models_interaction[[2134]])
 
 ##### Plot Top Model #####
 mod_final <- models_interaction[[2134]]
@@ -746,11 +748,11 @@ gg_pred_precis <- ggplot(df_precision_reg, aes(x = year, y = mean, color = Regio
   geom_ribbon(aes(ymin = lower, ymax = upper, color = NA), alpha = 0.25) +
   geom_line(linewidth = 2, alpha = 0.8) +
   facet_wrap(~Region, nrow = 1, scale = "free_y") +
-  theme_bw(base_size = 16) +
+  theme_bw(base_size = 18) +
   scale_color_viridis_d() +
   scale_x_continuous(limits = c(1970, 2005), breaks = scales::pretty_breaks()
                      ) +
-  scale_y_continuous(breaks = scales::pretty_breaks(), 
+  scale_y_continuous(limits = c(0, 0.035), breaks = scales::pretty_breaks(), 
                      # expand = expansion(mult = c(0.25, 0.25))
                      ) +
   labs(color = "Region",

@@ -65,16 +65,26 @@ df_gfb_windows$Region <- factor(df_gfb_windows$Region, levels=c('NFLS', 'SS', 'N
 
 gg_lme_entropy <- ggplot(df_lme_entropy, aes(x = year, y = shannon, color = Region)) +
   geom_vline(data = df_gfb_windows, aes(xintercept = xintercept), linetype = "dashed", alpha = 0.8) +
-  facet_wrap(~ Region) +
-  geom_line(size = 2) +
+  facet_wrap(~ Region, scale = "free", ncol= 1) +
+  geom_line(alpha = 0.8, size = 2) +
   # geom_point() +
   labs(x = "Year",
        y = "Trophic \nStructural Diversity") +
   scale_color_viridis_d() +
-  xlim(1970, 2005) +
-  theme_bw(base_size = 14)
+  scale_y_continuous(limits = c(0.90, 1.4), breaks = scales::pretty_breaks()) +
+  scale_x_continuous(limits = c(1970, 2005), breaks = scales::pretty_breaks()) +
+  theme_bw(base_size = 18) +
+  theme(text = element_text(family = "Arial"),
+        legend.position = 'none')
 
 gg_lme_entropy
+
+gg_tips_ssd <- plot_grid(gg_tips, gg_lme_entropy, ncol = 2, align = "hv")
+
+gg_tips_ssd
+
+ggsave("../Scale_Dependence_Structural_Stability_LMEs/Figures/Figure 3 - Temporal TIPs + Structural SR.jpeg", plot = gg_tips_ssd, dpi = 300, width = 10, height = 10)
+
 
 acf1_fun <- function(x) {
   if (all(is.na(x))) return(NA_real_)  # handle all-NA windows
@@ -134,16 +144,24 @@ gg_entropy_sd
 
 gg_entropy_cv <- ggplot(rolling_metrics, aes(x = year, y = shannon_roll_cv, color = Region)) +
   geom_vline(data = df_gfb_windows, aes(xintercept = xintercept), linetype = "dashed", alpha = 0.8) +
-  facet_wrap(~ Region) +
+  facet_wrap(~ Region, scale = "free") +
   geom_line(linewidth = 2) +
   # geom_point(size = 3) +
   labs(x = "Year",
        y = "Trophic \nStructural Stability (CV2)") +
   scale_color_viridis_d() +
-  xlim(1970, 2005) +
-  theme_bw(base_size = 14)
+  scale_x_continuous(limits = c(1970, 2005), breaks = scales::pretty_breaks()
+  ) +
+  scale_y_continuous(limits = c(0, 0.10), breaks = scales::pretty_breaks(), 
+                     # expand = expansion(mult = c(0.25, 0.25))
+  ) +
+  theme_bw(base_size = 18) +
+  theme(legend.position = "none")
 
 gg_entropy_cv
+
+ggsave("../Scale_Dependence_Structural_Stability_LMEs/Figures/Figure SX - Windowed Shannon Structural and Stability.jpeg", plot = gg_entropy_cv, dpi = 300, 
+       width = 10, height = 4)
 
 gg_entropy_acf1 <- ggplot(rolling_metrics, aes(x = year, y = shannon_roll_acf1, color = Region)) +
   facet_wrap(~ Region) +
@@ -155,11 +173,17 @@ gg_entropy_acf1 <- ggplot(rolling_metrics, aes(x = year, y = shannon_roll_acf1, 
 
 gg_entropy_acf1
 
+gg_stability_grid <- plot_grid(gg_pred_precis, gg_entropy_cv,
+                               ncol = 1, align = 'hv')
+gg_stability_grid
+
+ggsave("../Scale_Dependence_Structural_Stability_LMEs/Figures/Figure SX - Windowed Structural Stability (Precision + CV2).jpeg", plot = gg_stability_grid, dpi = 300, 
+       width = 10, height = 9)
+
+
 gg_entropy_grid <- plot_grid(gg_lme_entropy, gg_entropy_cv, 
-                                  ncol = 1, align = "hv")
+                             ncol = 1, align = "hv")
 
 gg_entropy_grid
-
-
 ggsave("../Scale_Dependence_Structural_Stability_LMEs/Figures/Figure SX - Windowed Shannon Structural Diversity and Stability.jpeg", plot = gg_entropy_grid, dpi = 300, 
        width = 8, height = 7)

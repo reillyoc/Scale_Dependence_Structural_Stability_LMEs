@@ -199,7 +199,8 @@ gg_dens <- ggplot(data = df_sum_gf, aes(x = Year, y = log10(sum_geom_dens), colo
   # geom_point() +
   scale_color_viridis_d() +
   geom_line(linewidth = 2) +
-  xlim(1970, 2006) +
+  scale_y_continuous(limits = c(-1.25, 1.75), breaks = scales::pretty_breaks()) +
+  scale_x_continuous(limits = c(1970, 2005), breaks = scales::pretty_breaks()) +
   theme_bw(base_size = 14)
 
 gg_dens
