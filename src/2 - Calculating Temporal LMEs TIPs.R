@@ -25,8 +25,9 @@ df_neus <- read.csv("../Scale_Dependence_Structural_Stability_LMEs/Data/Trawl Da
 ##### Species Accumulation Curves by Year #####
 #NFLS
 df_sp_accum_by_year_nfls <- df_nfls %>%
-  filter(lat <= 55.2) %>% #filter out sites North of 2J
-  filter(long <= -46.2) %>% #filter out sites East of 3L
+  #below filters to look at smaller cod management zones only
+  # filter(lat <= 55.2) %>% #filter out sites North of 2J
+  # filter(long <= -46.2) %>% #filter out sites East of 3L
   # mutate(keep = ifelse(lat < 48 & long < -54.5, FALSE, TRUE)) %>%
   # filter(keep == "TRUE") %>%
   # filter(lat >= 46.00) %>%
@@ -214,16 +215,17 @@ df_lme_sp <- rbind(df_nfls_sp, df_ss_sp, df_neus_sp)
 
 # write.csv(df_lme_sp, "../Scale_Dependence_Structural_Stability_LMEs/Data/Output Data/number_sites_regions.csv")
 
-ggsave("../Scale_Dependence_Structural_Stability_LMEs/Figures/Figure S2 - NFLS Species Accumulation Curves.jpeg", plot = gg_nfls_sac, dpi = 300, width = 14, height = 7)
+# ggsave("../Scale_Dependence_Structural_Stability_LMEs/Figures/Figure S2 - NFLS Species Accumulation Curves.jpeg", plot = gg_nfls_sac, dpi = 300, width = 14, height = 7)
 
-ggsave("../Scale_Dependence_Structural_Stability_LMEs/Figures/Figure S3 - SS Species Accumulation Curves.jpeg", plot = gg_ss_sac, dpi = 300, width = 14, height = 7)
+# ggsave("../Scale_Dependence_Structural_Stability_LMEs/Figures/Figure S3 - SS Species Accumulation Curves.jpeg", plot = gg_ss_sac, dpi = 300, width = 14, height = 7)
 
-ggsave("../Scale_Dependence_Structural_Stability_LMEs/Figures/Figure S4 - NEUS Species Accumulation Curves.jpeg", plot = gg_neus_sac, dpi = 300, width = 14, height = 7)
+# ggsave("../Scale_Dependence_Structural_Stability_LMEs/Figures/Figure S4 - NEUS Species Accumulation Curves.jpeg", plot = gg_neus_sac, dpi = 300, width = 14, height = 7)
 
 ##### Quantifying Species Richness by Trophic Interval & TIPs #####
 #NFLS
 df_nfls_pa <- df_nfls  %>%
-  # filter(lat <= 55.2) %>% #filter out sites North of 2J 
+  #below filters to look at smaller cod management zones only
+  # filter(lat <= 55.2) %>% #filter out sites North of 2J
   # filter(long <= -46.2) %>% #filter out sites East of 3L
   # mutate(keep = ifelse(lat < 48 & long < -54.5, FALSE, TRUE)) %>%
   # filter(keep == "TRUE") %>%

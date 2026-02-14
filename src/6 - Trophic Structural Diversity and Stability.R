@@ -83,7 +83,7 @@ gg_tips_ssd <- plot_grid(gg_tips, gg_lme_entropy, ncol = 2, align = "hv")
 
 gg_tips_ssd
 
-ggsave("../Scale_Dependence_Structural_Stability_LMEs/Figures/Figure 3 - Temporal TIPs + Structural SR.jpeg", plot = gg_tips_ssd, dpi = 300, width = 10, height = 10)
+# ggsave("../Scale_Dependence_Structural_Stability_LMEs/Figures/Figure 3 - Temporal TIPs + Structural SR.jpeg", plot = gg_tips_ssd, dpi = 300, width = 10, height = 10)
 
 
 acf1_fun <- function(x) {
@@ -160,8 +160,7 @@ gg_entropy_cv <- ggplot(rolling_metrics, aes(x = year, y = shannon_roll_cv, colo
 
 gg_entropy_cv
 
-ggsave("../Scale_Dependence_Structural_Stability_LMEs/Figures/Figure SX - Windowed Shannon Structural and Stability.jpeg", plot = gg_entropy_cv, dpi = 300, 
-       width = 10, height = 4)
+# ggsave("../Scale_Dependence_Structural_Stability_LMEs/Figures/Figure SX - Windowed Shannon Structural and Stability.jpeg", plot = gg_entropy_cv, dpi = 300, width = 10, height = 4)
 
 gg_entropy_acf1 <- ggplot(rolling_metrics, aes(x = year, y = shannon_roll_acf1, color = Region)) +
   facet_wrap(~ Region) +
@@ -177,13 +176,11 @@ gg_stability_grid <- plot_grid(gg_pred_precis, gg_entropy_cv,
                                ncol = 1, align = 'hv')
 gg_stability_grid
 
-ggsave("../Scale_Dependence_Structural_Stability_LMEs/Figures/Figure SX - Windowed Structural Stability (Precision + CV2).jpeg", plot = gg_stability_grid, dpi = 300, 
-       width = 10, height = 9)
+# ggsave("../Scale_Dependence_Structural_Stability_LMEs/Figures/Figure SX - Windowed Structural Stability (Precision + CV2).jpeg", plot = gg_stability_grid, dpi = 300, width = 10, height = 9)
 
 
 gg_entropy_grid <- plot_grid(gg_lme_entropy, gg_entropy_cv, 
                              ncol = 1, align = "hv")
 
 gg_entropy_grid
-ggsave("../Scale_Dependence_Structural_Stability_LMEs/Figures/Figure SX - Windowed Shannon Structural Diversity and Stability.jpeg", plot = gg_entropy_grid, dpi = 300, 
-       width = 8, height = 7)
+# ggsave("../Scale_Dependence_Structural_Stability_LMEs/Figures/Figure SX - Windowed Shannon Structural Diversity and Stability.jpeg", plot = gg_entropy_grid, dpi = 300, width = 8, height = 7)
