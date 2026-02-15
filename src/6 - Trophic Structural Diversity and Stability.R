@@ -1,4 +1,4 @@
-# Playing around with Shannon's Entropy and Mean Trophic Structure
+# Shannon Structural Diversity and Structural Variability
 
 # Author(s): Reilly O'Connor
 # Version: 2025-11-13

@@ -24,8 +24,9 @@ df_neus <- read.csv("../Scale_Dependence_Structural_Stability_LMEs/Data/Trawl Da
 
 ##### NFLS Groundfish Community Biomass #####
 df_nfls_sub <-  df_nfls %>%
-  filter(lat <= 55.2) %>% #filter out sites North of 2J
-  filter(long <= -46.2) %>% #filter out sites East of 3L
+  #below filters to look at smaller cod management zones only
+  # filter(lat <= 55.2) %>% #filter out sites North of 2J
+  # filter(long <= -46.2) %>% #filter out sites East of 3L
   # mutate(keep = ifelse(lat < 48 & long < -54.5, FALSE, TRUE)) %>%
   # filter(keep == "TRUE") %>%
   # filter(lat >= 46.00) %>%g
@@ -71,16 +72,6 @@ ggplot(data = df_nfls_sum, aes(x = Year, y = sum_geom_dens)) +
   geom_line() +
   theme_classic()
 
-library(nlme)
-
-lm_nfls_sum <- gls(sum_geom_dens ~ Year, data = df_nfls_sum,
-                   correlation = corAR1(form =~ Year))
-summary(lm_nfls_sum)
-
-plot(df_nfls_sum$resid_sum_dens)
-
-acf(df_nfls_sum$sum_geom_dens)
-
 ##### SS Groundfish Community Biomass #####
 df_ss_sub <-  df_ss %>%
   distinct(year, towid, spcode, weightpertow) %>%
@@ -116,7 +107,7 @@ df_ss_sum <- df_ss_sub %>%
          spcode = "sum")
 
 ggplot(data = df_ss_sum, aes(x = Year, y = sum_geom_dens)) +
-  geom_vline(xintercept = 1992) +
+  # geom_vline(xintercept = 1992) +
   geom_vline(xintercept = 1995) +
   geom_point() +
   geom_line() +
@@ -195,7 +186,7 @@ gg_dens <- ggplot(data = df_sum_gf, aes(x = Year, y = log10(sum_geom_dens), colo
   geom_vline(data = df_gfb_windows, aes(xintercept = xintercept), linetype = "dashed", alpha = 0.8) +
   # geom_vline(xintercept = 1981) +
   # geom_vline(xintercept = 1983) +
-  facet_wrap(~ Region, scale = "free") +
+  facet_wrap(~ Region) +
   # geom_point() +
   scale_color_viridis_d() +
   geom_line(linewidth = 2) +
@@ -205,7 +196,23 @@ gg_dens <- ggplot(data = df_sum_gf, aes(x = Year, y = log10(sum_geom_dens), colo
 
 gg_dens
 
+gg_dens_sc <- ggplot(data = df_sum_gf, aes(x = Year, y = log10(sum_geom_dens), color = Region)) +
+  geom_vline(data = df_gfb_windows, aes(xintercept = xintercept), linetype = "dashed", alpha = 0.8) +
+  # geom_vline(xintercept = 1981) +
+  # geom_vline(xintercept = 1983) +
+  facet_wrap(~ Region, scale = "free") +
+  # geom_point() +
+  scale_color_viridis_d() +
+  geom_line(linewidth = 2) +
+  # scale_y_continuous(limits = c(-1.25, 1.75), breaks = scales::pretty_breaks()) +
+  scale_x_continuous(limits = c(1970, 2005), breaks = scales::pretty_breaks()) +
+  theme_bw(base_size = 14)
+
+gg_dens_sc
+
 # ggsave("../Scale_Dependence_Structural_Stability_LMEs/Figures/Figure SX - Geometric Sum Mean Biomass Densities.jpeg", plot = gg_dens, width = 10, height = 3, dpi = 300)
+# 
+# ggsave("../Scale_Dependence_Structural_Stability_LMEs/Figures/Figure SX - Geometric Sum Mean Biomass Densities, free scale.jpeg", plot = gg_dens_sc, width = 10, height = 3, dpi = 300)
 
 # write.csv(df_sum_gf, "../Scale_Dependence_Structural_Stability_LMEs/Data/Output Data/groundfish sum biomass.csv")
 
